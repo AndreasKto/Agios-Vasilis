@@ -144,7 +144,6 @@ input::placeholder{color:rgba(246,242,234,.45)}
           <label><input type="radio" name="passes" value="3"><span>3</span></label>
         </fieldset>
         <p class="help" style="margin:-8px 0 16px">Με περισσότερα περάσματα, ξαναπερνάει κάθε 10 λεπτά.</p>
-        <label class="tog"><span>Ρεαλιστικό: σιλουέτα από μακριά, με φανάρια και χρυσή σκόνη</span><input type="checkbox" id="real"></label>
         <label class="tog"><span>Κουδουνάκια και μουσική</span><input type="checkbox" id="sound"></label>
         <label class="tog"><span>Το όνομα γράφεται στον ουρανό με αστερόσκονη</span><input type="checkbox" id="msg"></label>
         <label class="tog"><span>Ο Άγιος Βασίλης μιλάει με τη φωνή του κινητού (ακούγεται ρομποτική)</span><input type="checkbox" id="voice"></label>
@@ -165,6 +164,8 @@ input::placeholder{color:rgba(246,242,234,.45)}
     </section>
   </div>
 </main>
+
+<video id="sv" src="santa.mp4" muted playsinline preload="auto" aria-hidden="true" tabindex="-1" style="position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none"></video>
 
 <div id="sky" hidden>
   <video id="cam" playsinline muted autoplay></video>
@@ -234,15 +235,15 @@ try{
   if(raw){S=Object.assign({},DEF,JSON.parse(raw));hadSaved=true;}
   else if(old){const o=JSON.parse(old);S=Object.assign({},DEF,{names:o.names||'',date:o.date||DEF.date,time:o.time||DEF.time,passes:o.passes||2,sound:o.sound!==false});hadSaved=true;}
 }catch(e){}
-const F={names:$('names'),date:$('date'),time:$('time'),sound:$('sound'),voice:$('voice'),msg:$('msg'),real:$('real')};
+const F={names:$('names'),date:$('date'),time:$('time'),sound:$('sound'),voice:$('voice'),msg:$('msg')};
 function fill(){
-  F.names.value=S.names;F.date.value=S.date;F.time.value=S.time;F.sound.checked=!!S.sound;F.voice.checked=!!S.voice;F.msg.checked=S.msg!==false;F.real.checked=S.real!==false;
+  F.names.value=S.names;F.date.value=S.date;F.time.value=S.time;F.sound.checked=!!S.sound;F.voice.checked=!!S.voice;F.msg.checked=S.msg!==false;
   const r=document.querySelector('input[name=passes][value="'+S.passes+'"]');if(r)r.checked=true;
 }
 function readForm(){
   S.names=F.names.value.trim();S.date=F.date.value||DEF.date;S.time=F.time.value||DEF.time;
   const r=document.querySelector('input[name=passes]:checked');S.passes=r?+r.value:2;
-  S.sound=F.sound.checked;S.voice=F.voice.checked;S.msg=F.msg.checked;S.real=F.real.checked;
+  S.sound=F.sound.checked;S.voice=F.voice.checked;S.msg=F.msg.checked;
   try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
   ticket();
 }
@@ -724,7 +725,7 @@ function edgeArrow(c,v,x,y,now){
 const msgCv=document.createElement('canvas'),mctx=msgCv.getContext('2d',{willReadFrequently:true});
 const glowCv=document.createElement('canvas'),gctx=glowCv.getContext('2d');
 let MSG=null;
-function startMsg(v,fx0,fy0){
+function startMsg(v,fx0,fy0,yTop){
   const W=v.W,H=v.H,maxW=W*.86;
   let fs=Math.min(68,W*.14),lines=names().length?['Καλή Χρονιά,',joinNames(names())+'!']:['Καλή Χρονιά!'];
   const font=()=>'italic 700 '+fs+'px '+SERIF;
@@ -740,7 +741,7 @@ function startMsg(v,fx0,fy0){
   const data=mctx.getImageData(0,0,tw,th).data,step=Math.max(2,Math.round(fs/15));let pts=[];
   for(let yy=0;yy<th;yy+=step)for(let xx=0;xx<tw;xx+=step)if(data[(yy*tw+xx)*4+3]>150)pts.push([xx,yy]);
   if(pts.length>760){const st=pts.length/760,kp=[];for(let i=0;i<760;i++)kp.push(pts[Math.floor(i*st)]);pts=kp;}
-  const y0=clamp(H*.56-th/2,120,Math.max(120,H-th-150));
+  const y0=yTop!=null?clamp(yTop,120,Math.max(120,H-th-150)):clamp(H*.56-th/2,120,Math.max(120,H-th-150));
   glowCv.width=Math.ceil(tw*DPR);glowCv.height=Math.ceil(th*DPR);
   gctx.setTransform(DPR,0,0,DPR,0,0);gctx.font=font();gctx.textAlign='center';gctx.textBaseline='middle';gctx.fillStyle='#fff6dc';
   gctx.shadowColor='rgba(255,196,90,.95)';gctx.shadowBlur=18*DPR;lines.forEach((l,i)=>gctx.fillText(l,tw/2,padY+lh*(i+.5)));
@@ -764,6 +765,42 @@ function drawMsg(v,now){
   c.globalAlpha=1;c.globalCompositeOperation='source-over';
 }
 
+/* ---------- the filmed sleigh: video with its alpha in the lower half ---------- */
+const SV=$('sv'),VFPS=24,VPW=34,VAR=332/1024;
+const BOX=JSON.parse('[0,0,0,[0.018,0.706,0.189,0.904],[0.018,0.699,0.198,0.905],[0.019,0.693,0.206,0.905],[0.019,0.688,0.212,0.905],[0.02,0.675,0.235,0.905],[0.02,0.666,0.242,0.906],[0.021,0.657,0.249,0.906],[0.021,0.649,0.255,0.905],[0.022,0.641,0.262,0.903],[0.023,0.632,0.27,0.902],[0.023,0.622,0.277,0.9],[0.024,0.612,0.284,0.897],[0.025,0.602,0.292,0.894],[0.026,0.591,0.3,0.891],[0.027,0.581,0.308,0.889],[0.028,0.572,0.317,0.889],[0.029,0.565,0.325,0.89],[0.03,0.559,0.334,0.893],[0.032,0.553,0.343,0.897],[0.033,0.548,0.352,0.901],[0.033,0.543,0.361,0.905],[0.034,0.537,0.37,0.908],[0.035,0.529,0.379,0.91],[0.036,0.522,0.388,0.911],[0.037,0.515,0.396,0.913],[0.039,0.508,0.405,0.914],[0.04,0.501,0.415,0.917],[0.041,0.496,0.424,0.92],[0.042,0.491,0.433,0.924],[0.043,0.486,0.442,0.928],[0.044,0.481,0.451,0.932],[0.045,0.475,0.461,0.934],[0.045,0.467,0.47,0.934],[0.046,0.458,0.479,0.933],[0.047,0.448,0.488,0.932],[0.049,0.437,0.498,0.929],[0.05,0.426,0.507,0.927],[0.05,0.416,0.516,0.925],[0.052,0.406,0.525,0.924],[0.053,0.396,0.533,0.923],[0.054,0.386,0.542,0.922],[0.055,0.376,0.551,0.921],[0.056,0.364,0.559,0.918],[0.057,0.352,0.567,0.915],[0.058,0.34,0.575,0.911],[0.059,0.326,0.583,0.906],[0.06,0.314,0.591,0.902],[0.061,0.302,0.599,0.898],[0.062,0.291,0.607,0.895],[0.062,0.282,0.614,0.894],[0.063,0.274,0.622,0.893],[0.064,0.267,0.628,0.894],[0.065,0.26,0.635,0.895],[0.065,0.253,0.642,0.895],[0.066,0.245,0.648,0.895],[0.067,0.237,0.654,0.895],[0.067,0.228,0.659,0.895],[0.068,0.22,0.665,0.896],[0.068,0.213,0.67,0.897],[0.069,0.208,0.675,0.9],[0.069,0.204,0.68,0.903],[0.07,0.202,0.684,0.907],[0.07,0.201,0.688,0.913],[0.071,0.201,0.692,0.918],[0.071,0.201,0.696,0.921],[0.071,0.2,0.699,0.924],[0.072,0.198,0.701,0.925],[0.072,0.196,0.704,0.926],[0.072,0.191,0.706,0.927],[0.072,0.185,0.707,0.928],[0.072,0.18,0.709,0.929],[0.072,0.176,0.71,0.93],[0.072,0.171,0.711,0.932],[0.072,0.166,0.711,0.933],[0.072,0.161,0.712,0.934],[0.073,0.158,0.712,0.933],[0.073,0.154,0.712,0.931],[0.073,0.15,0.713,0.928],[0.073,0.145,0.713,0.925],[0.074,0.142,0.714,0.921],[0.074,0.139,0.715,0.917],[0.075,0.137,0.716,0.914],[0.075,0.139,0.716,0.911],[0.076,0.142,0.717,0.909],[0.076,0.145,0.718,0.907],[0.077,0.148,0.719,0.904],[0.078,0.15,0.72,0.902],[0.078,0.151,0.721,0.899],[0.079,0.151,0.723,0.896],[0.08,0.149,0.724,0.893],[0.08,0.147,0.725,0.891],[0.081,0.145,0.727,0.89],[0.082,0.145,0.729,0.891],[0.083,0.146,0.73,0.893],[0.084,0.148,0.732,0.895],[0.085,0.15,0.734,0.899],[0.086,0.152,0.736,0.902],[0.087,0.153,0.738,0.904],[0.088,0.153,0.74,0.906],[0.089,0.153,0.742,0.907],[0.09,0.152,0.744,0.909],[0.092,0.148,0.746,0.91],[0.093,0.144,0.748,0.913],[0.094,0.141,0.751,0.916],[0.095,0.138,0.753,0.92],[0.097,0.136,0.756,0.924],[0.098,0.133,0.758,0.928],[0.099,0.13,0.76,0.932],[0.1,0.128,0.763,0.933],[0.101,0.126,0.765,0.934],[0.102,0.124,0.767,0.933],[0.104,0.121,0.769,0.932],[0.105,0.119,0.772,0.93],[0.106,0.119,0.774,0.929],[0.107,0.122,0.777,0.927],[0.109,0.125,0.779,0.927],[0.11,0.13,0.781,0.926],[0.111,0.133,0.784,0.925],[0.113,0.136,0.786,0.924],[0.114,0.136,0.788,0.921],[0.115,0.136,0.791,0.917],[0.117,0.131,0.793,0.913],[0.118,0.126,0.795,0.908],[0.119,0.12,0.797,0.903],[0.12,0.116,0.8,0.9],[0.121,0.113,0.802,0.897],[0.123,0.11,0.805,0.896],[0.124,0.108,0.807,0.896],[0.125,0.107,0.809,0.896],[0.126,0.105,0.811,0.896],[0.127,0.103,0.813,0.896],[0.129,0.1,0.816,0.896],[0.13,0.093,0.818,0.895],[0.131,0.086,0.82,0.895],[0.132,0.08,0.822,0.895],[0.133,0.075,0.825,0.896],[0.134,0.071,0.827,0.899],[0.135,0.068,0.829,0.903],[0.136,0.065,0.831,0.908],[0.137,0.067,0.833,0.913],[0.138,0.068,0.834,0.916],[0.139,0.07,0.836,0.919],[0.14,0.071,0.838,0.921],[0.141,0.071,0.839,0.923],[0.141,0.071,0.841,0.923],[0.142,0.077,0.842,0.924],[0.143,0.083,0.843,0.925],[0.143,0.089,0.845,0.927],[0.144,0.095,0.846,0.929],[0.145,0.102,0.847,0.931],[0.145,0.107,0.848,0.932],[0.146,0.111,0.849,0.932],[0.146,0.108,0.85,0.931],[0.147,0.105,0.851,0.929],[0.147,0.102,0.851,0.926],[0.147,0.097,0.852,0.922],[0.148,0.093,0.852,0.918],[0.148,0.089,0.853,0.915],[0.148,0.087,0.853,0.913],[0.148,0.086,0.853,0.91],[0.149,0.084,0.853,0.909],[0.149,0.083,0.853,0.907],[0.15,0.082,0.853,0.904],[0.15,0.08,0.853,0.901],[0.151,0.078,0.853,0.898],[0.152,0.077,0.853,0.894],[0.153,0.075,0.853,0.891],[0.154,0.075,0.853,0.889],[0.155,0.077,0.854,0.888],[0.157,0.08,0.854,0.888],[0.159,0.084,0.854,0.89],[0.161,0.089,0.855,0.892],[0.163,0.094,0.855,0.895],[0.166,0.099,0.855,0.897],[0.169,0.105,0.856,0.899],[0.171,0.111,0.856,0.901],[0.174,0.117,0.857,0.902],[0.177,0.124,0.857,0.904],[0.181,0.132,0.858,0.907],[0.184,0.142,0.858,0.91],[0.188,0.154,0.859,0.914],[0.191,0.167,0.86,0.919],[0.195,0.179,0.861,0.923],[0.2,0.191,0.862,0.928],[0.204,0.202,0.862,0.93],[0.208,0.211,0.863,0.932],[0.213,0.219,0.864,0.932],[0.217,0.225,0.865,0.932],[0.222,0.23,0.866,0.931],[0.227,0.236,0.867,0.929],[0.232,0.241,0.868,0.929],[0.237,0.246,0.869,0.929],[0.243,0.251,0.869,0.928],[0.248,0.256,0.87,0.928],[0.254,0.26,0.871,0.927],[0.26,0.263,0.872,0.924],[0.266,0.265,0.873,0.92],[0.272,0.266,0.874,0.915],[0.278,0.266,0.875,0.91],[0.284,0.267,0.876,0.904],[0.29,0.269,0.877,0.9],[0.297,0.272,0.878,0.897],[0.304,0.275,0.879,0.894],[0.31,0.281,0.88,0.893],[0.317,0.286,0.881,0.893],[0.324,0.292,0.882,0.892],[0.331,0.298,0.883,0.892],[0.338,0.303,0.884,0.891],[0.345,0.309,0.885,0.89],[0.352,0.314,0.887,0.889],[0.359,0.32,0.888,0.889],[0.366,0.327,0.889,0.89],[0.373,0.336,0.89,0.892],[0.381,0.346,0.892,0.896],[0.388,0.357,0.893,0.901],[0.396,0.369,0.895,0.905],[0.403,0.38,0.896,0.91],[0.411,0.39,0.898,0.913],[0.418,0.4,0.899,0.917],[0.426,0.408,0.9,0.918],[0.434,0.417,0.902,0.92],[0.441,0.425,0.903,0.922],[0.449,0.433,0.904,0.924],[0.457,0.443,0.906,0.926],[0.465,0.453,0.907,0.929],[0.473,0.462,0.909,0.932],[0.482,0.472,0.91,0.934],[0.49,0.481,0.911,0.935],[0.498,0.488,0.913,0.934],[0.506,0.494,0.914,0.932],[0.514,0.498,0.915,0.929],[0.522,0.502,0.916,0.925],[0.53,0.506,0.918,0.922],[0.538,0.511,0.919,0.918],[0.546,0.515,0.92,0.916],[0.554,0.521,0.921,0.914],[0.562,0.526,0.923,0.912],[0.571,0.531,0.924,0.911],[0.579,0.536,0.925,0.908],[0.586,0.54,0.927,0.905],[0.595,0.543,0.928,0.902],[0.603,0.546,0.929,0.898],[0.611,0.55,0.931,0.894],[0.619,0.554,0.932,0.891],[0.627,0.56,0.934,0.889],[0.634,0.567,0.935,0.889],[0.643,0.575,0.936,0.89],[0.65,0.584,0.938,0.892],[0.658,0.593,0.939,0.895],[0.666,0.602,0.941,0.897],[0.674,0.611,0.942,0.899],[0.682,0.619,0.944,0.901],[0.689,0.627,0.945,0.902],[0.697,0.636,0.947,0.903],[0.705,0.644,0.948,0.905],[0.712,0.654,0.949,0.908],[0.72,0.664,0.95,0.912],[0.727,0.676,0.952,0.916],[0.734,0.687,0.953,0.92],[0.742,0.697,0.954,0.925],[0.749,0.707,0.955,0.928],[0.756,0.716,0.956,0.929],[0.763,0.723,0.957,0.93],[0.77,0.729,0.958,0.93],[0.777,0.735,0.959,0.929],[0.784,0.741,0.961,0.929],[0.79,0.746,0.961,0.929],[0.797,0.752,0.962,0.929],[0.803,0.759,0.963,0.929],[0.81,0.765,0.965,0.929],[0.816,0.77,0.966,0.928],[0.822,0.774,0.967,0.927],[0.828,0.776,0.968,0.923],[0.834,0.778,0.969,0.92],[0.84,0.779,0.97,0.915],[0.846,0.779,0.971,0.911],[0.852,0.78,0.972,0.907],[0.857,0.781,0.973,0.902],[0.863,0.784,0.974,0.899],[0.868,0.788,0.974,0.897],[0.873,0.791,0.975,0.894],[0.878,0.795,0.976,0.892],[0.883,0.798,0.977,0.889],[0.888,0.801,0.978,0.886],[0.893,0.804,0.979,0.884],[0.897,0.806,0.979,0.882],[0.902,0.809,0.98,0.881],[0.906,0.814,0.98,0.881],[0.91,0.819,0.98,0.882],[0.912,0.821,0.98,0.882],[0.914,0.824,0.98,0.883],[0.916,0.827,0.98,0.884],0,0]');
+let GL=null,glc=null,VIDEO_OK=false,lastVT=-1;
+SV.addEventListener('loadeddata',()=>{VIDEO_OK=true;});
+SV.addEventListener('error',()=>{VIDEO_OK=false;});
+function initGL(){
+  try{
+    glc=document.createElement('canvas');glc.width=1024;glc.height=332;
+    const gl=glc.getContext('webgl',{premultipliedAlpha:true,preserveDrawingBuffer:true,alpha:true,antialias:false});if(!gl)return;
+    const sh=(t,src)=>{const o=gl.createShader(t);gl.shaderSource(o,src);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error('shader');return o;};
+    const pr=gl.createProgram();
+    gl.attachShader(pr,sh(gl.VERTEX_SHADER,'attribute vec2 p;varying vec2 uv;void main(){uv=vec2((p.x+1.)*.5,(1.-p.y)*.5);gl_Position=vec4(p,0.,1.);}'));
+    gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,'precision mediump float;varying vec2 uv;uniform sampler2D t;void main(){vec3 c=texture2D(t,vec2(uv.x,uv.y*.5)).rgb;float a=texture2D(t,vec2(uv.x,.5+uv.y*.5)).r;a=clamp((a-.04)/.94,0.,1.);gl_FragColor=vec4(min(c,vec3(a)),a);}'));
+    gl.linkProgram(pr);if(!gl.getProgramParameter(pr,gl.LINK_STATUS))return;gl.useProgram(pr);
+    const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+    const loc=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    gl.bindTexture(gl.TEXTURE_2D,gl.createTexture());
+    [[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]].forEach(q=>gl.texParameteri(gl.TEXTURE_2D,q[0],q[1]));
+    gl.viewport(0,0,1024,332);gl.clearColor(0,0,0,0);GL=gl;
+  }catch(e){GL=null;console.warn('webgl',e&&e.message);}
+}
+function glFrame(){
+  if(!GL||SV.readyState<2)return false;
+  if(SV.currentTime===lastVT)return true;
+  try{GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,SV);GL.clear(GL.COLOR_BUFFER_BIT);GL.drawArrays(GL.TRIANGLE_STRIP,0,4);lastVT=SV.currentTime;return true;}catch(e){return false;}
+}
+function vidPlay(t){try{SV.currentTime=t||0;lastVT=-1;const p=SV.play();if(p&&p.catch)p.catch(()=>{});}catch(e){}}
+function vidReady(){return !!GL&&!SV.error&&(VIDEO_OK||SV.readyState>=2);}
+/* where the sleigh is inside the plane, and on screen */
+function vidPlane(v,f){const c=proj(v,f.h0,f.e0),w=f.pw*v.ppd;return {x:c[0],y:c[1],w,h:w*VAR};}
+function vidAt(pl,dir,u,vv){return [pl.x+dir*(u-.5)*pl.w,pl.y+(vv-.5)*pl.h];}
+function vidBox(){const i=Math.min(BOX.length-1,Math.max(0,Math.floor(SV.currentTime*VFPS)));return BOX[i]||null;}
+function drawVid(c,pl,dir){c.save();c.translate(pl.x,pl.y);c.scale(dir,1);c.drawImage(glc,-pl.w/2,-pl.h/2,pl.w,pl.h);c.restore();}
+function newVidFly(v,dir){return {vid:true,dir,pw:VPW,h0:v.h,e0:clamp(v.e,-5,55)+8,t0:performance.now(),pre:1800,started:false};}
+
 /* ---------- sky view ---------- */
 let mode='setup',camOK=false,stream=null,FLY=null,PENDING=null,TRAIL=[],PHOTOS=[],flights=0,lastHud=0,lastFlightEnd=-1e9,snapReq=false,lastBig=null;
 const doneT=new Set();
@@ -786,7 +823,7 @@ function schedule(nowP){
   if(PENDING&&!FLY){
     PENDING.up=(!hasOri||SKY.e>-12)?PENDING.up+1:0;
     const w=nowP-PENDING.since;
-    if((PENDING.up>20&&w>PENDING.delay)||w>20000){PENDING=null;FLY=newFly(SKY,Math.random()<.5?1:-1,S.real!==false?SKYFLY:{});}
+    if((PENDING.up>20&&w>PENDING.delay)||w>20000){PENDING=null;const dr=Math.random()<.5?1:-1;FLY=vidReady()?newVidFly(SKY,dr):newFly(SKY,dr,SKYFLY);}
   }
 }
 function drawSky(now,dt){
@@ -797,7 +834,35 @@ function drawSky(now,dt){
   schedule(now);
   drawTrail(TRAIL,v,dt);
   let amp=0,pan=0;
-  if(FLY){
+  if(FLY&&FLY.vid){
+    const f=FLY,el=now-f.t0;
+    if(!f.started&&el>=f.pre){f.started=true;vidPlay(0);}
+    if(!f.started){amp=.3*el/f.pre;pan=-.7*f.dir;}
+    else{
+      const pl=vidPlane(v,f),box=vidBox(),dur=SV.duration||BOX.length/VFPS,prog=clamp(SV.currentTime/dur,0,1);
+      if(glFrame())drawVid(c,pl,f.dir);
+      if(box){
+        const ctr=vidAt(pl,f.dir,(box[0]+box[2])/2,(box[1]+box[3])/2),cx=ctr[0],cy=ctr[1],size=(box[2]-box[0])/.7;
+        f.on=cx>-30&&cx<v.W+30&&cy>-10&&cy<v.H+10;
+        f.side=cx<0?'αριστερά':cx>v.W?'δεξιά':cy<0?'πιο ψηλά':'πιο χαμηλά';
+        if(f.on)f.seen=true;
+        const rr=vidAt(pl,f.dir,box[0]+.04*(box[2]-box[0]),box[3]-.1*(box[3]-box[1]));
+        emitTrail(TRAIL,v,rr[0],rr[1],f.dir,Math.max(.7,size*1.2),2);
+        if(!f.said&&f.on&&size>.55&&Math.abs(cx-v.W/2)<v.W*.25){f.said=now;say(voiceLine());}
+        if(!f.snap&&f.on&&size>.82&&Math.abs(cx-v.W/2)<v.W*.18){f.snap=true;snapReq=true;}
+        if(!f.on&&(!f.seen||prog<.7))edgeArrow(c,v,cx,cy,now);
+        const hc=f.h0+f.dir*((box[0]+box[2])/2-.5)*f.pw,d=angDiff(hc,v.h);
+        amp=(.25+.75*clamp(size,0,1))*(.45+.55*Math.exp(-(d*d)/700));pan=clamp(d/30,-1,1);
+        if(!f.msg&&((f.said>0&&now-f.said>900)||prog>.85)){f.msg=true;if(!f.said){f.said=-1;say(voiceLine());}if(S.msg!==false)startMsg(v,clamp(cx,20,v.W-20),clamp(cy,60,v.H-60),pl.y+pl.h/2+6);}
+      }else amp=prog<.5?.3:.08;
+      if(SV.paused&&!SV.ended&&SV.currentTime>0&&(!f.retry||now-f.retry>800)){f.retry=now;try{const rp=SV.play();if(rp&&rp.catch)rp.catch(()=>{});}catch(e){}}
+      if(el>f.pre+2500&&SV.paused&&SV.currentTime===0){FLY=newFly(v,f.dir,SKYFLY);FLY.t0=now-1500;}
+      else if(SV.ended||prog>=.995){
+        if(!f.msg&&S.msg!==false){f.msg=true;startMsg(v,v.W/2,v.H*.35);}
+        try{SV.pause();}catch(e){}FLY=null;flights++;lastFlightEnd=now;
+      }
+    }
+  }else if(FLY){
     const f=FLY,pos=flyPos(f,now),r=drawTeam(v,pos,f.dir,now),x=r[0],y=r[1],s=r[2];
     const ctr=local2screen(x,y,s,f.dir,pos.rot,74,-26),cx=ctr[0],cy=ctr[1];
     f.on=cx>-30&&cx<v.W+30&&cy>-10&&cy<v.H+10;
@@ -935,9 +1000,21 @@ $('pClose').addEventListener('click',()=>{$('parent').hidden=true;});
 const heroCv=$('hero'),hctx=heroCv.getContext('2d'),HV={c:hctx,W:0,H:0,ppd:10,h:0,e:10};
 let HFLY=null,HTRAIL=[],heroNext=0;
 function sizeHero(){const r=heroCv.getBoundingClientRect();if(!r.width)return;HV.W=r.width;HV.H=r.height;heroCv.width=Math.round(r.width*DPR);heroCv.height=Math.round(r.height*DPR);HV.ppd=r.height/40;HFLY=null;}
+let heroVidT=0;
 function drawHero(now,dt){
   if(!HV.W)sizeHero();if(!HV.W)return;
   hctx.setTransform(DPR,0,0,DPR,0,0);backdrop(HV,now);
+  if(vidReady()){
+    if(RM){if(SV.paused&&Math.abs(SV.currentTime-6.2)>.1){try{SV.currentTime=6.2;}catch(e){}}}
+    else if(SV.paused||SV.ended){if(now>heroVidT){heroVidT=now+1e9;vidPlay(0);}}
+    else heroVidT=now+700;
+    const f={h0:0,e0:14,pw:Math.min(70,HV.W/HV.ppd)},pl=vidPlane(HV,f);
+    drawTrail(HTRAIL,HV,dt);
+    if(glFrame())drawVid(hctx,pl,1);
+    const box=vidBox();
+    if(box&&!SV.paused){const rr=vidAt(pl,1,box[0]+.04*(box[2]-box[0]),box[3]-.1*(box[3]-box[1]));emitTrail(HTRAIL,HV,rr[0],rr[1],1,.9,1);}
+    return;
+  }
   if(!HFLY&&(RM||now>heroNext))HFLY=newFly(HV,1,{lead:4,lift:3,arc:2.5,secs:11});
   if(!HFLY)return;
   if(RM){drawTeam(HV,flyPos(HFLY,now,.56),1,now);return;}
@@ -956,6 +1033,7 @@ function show(m){
 async function enterSky(test){
   readForm();
   initAudio();unlockSpeech();
+  try{SV.muted=true;const pv=SV.play();if(pv&&pv.then)pv.then(()=>{if(!FLY||!FLY.vid||!FLY.started)SV.pause();}).catch(()=>{});}catch(e){}
   const pO=startOri(),pC=startCam();
   show('sky');wake();hud(performance.now());
   await Promise.allSettled([pO,pC]);
@@ -963,13 +1041,14 @@ async function enterSky(test){
   if(test)requestPass(2200);
 }
 function exitSky(){
-  stopCam();try{speechSynthesis.cancel();}catch(e){}
+  stopCam();try{speechSynthesis.cancel();SV.pause();}catch(e){}heroVidT=0;
   FLY=null;PENDING=null;MSG=null;TRAIL.length=0;
   try{if(WL)WL.release();}catch(e){}WL=null;
   show('setup');$('prefs').open=true;
 }
 
 /* ---------- start ---------- */
+initGL();
 fill();ticket();if(!hadSaved)$('prefs').open=true;
 $('form').addEventListener('input',readForm);$('form').addEventListener('change',readForm);$('form').addEventListener('submit',e=>e.preventDefault());
 $('go').addEventListener('click',()=>enterSky(false));
