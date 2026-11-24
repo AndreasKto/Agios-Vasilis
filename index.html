@@ -146,7 +146,7 @@ input::placeholder{color:rgba(246,242,234,.45)}
         <p class="help" style="margin:-8px 0 16px">Με περισσότερα περάσματα, ξαναπερνάει κάθε 10 λεπτά.</p>
         <label class="tog"><span>Κουδουνάκια και μουσική</span><input type="checkbox" id="sound"></label>
         <label class="tog"><span>Το όνομα γράφεται στον ουρανό με αστερόσκονη</span><input type="checkbox" id="msg"></label>
-        <label class="tog"><span>Ο Άγιος Βασίλης μιλάει με τη φωνή του κινητού (ακούγεται ρομποτική)</span><input type="checkbox" id="voice"></label>
+        <label class="tog"><span>Ο Άγιος Βασίλης λέει «Χο χο χο! Χρόνια πολλά!»</span><input type="checkbox" id="voice"></label>
         <button class="btn ghost" id="test" type="button" style="margin-top:14px">Δοκιμαστικό πέρασμα τώρα</button>
       </form>
     </details>
@@ -165,7 +165,7 @@ input::placeholder{color:rgba(246,242,234,.45)}
   </div>
 </main>
 
-<video id="sv" src="santa.mp4" muted playsinline preload="auto" aria-hidden="true" tabindex="-1" style="position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none"></video>
+<video id="sv" src="santa.mp4" muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1" style="position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none"></video>
 
 <div id="sky" hidden>
   <video id="cam" playsinline muted autoplay></video>
@@ -227,13 +227,13 @@ const SERIF='Alegreya, Georgia, "Times New Roman", serif';
 const RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
 
 /* ---------- settings ---------- */
-const KEY='santa-sky-v2', Y=new Date().getFullYear();
-const DEF={names:'',date:Y+'-12-31',time:'20:00',passes:2,sound:true,voice:false,msg:true,real:true};
+const KEY='santa-sky-v3', Y=new Date().getFullYear();
+const DEF={names:'',date:Y+'-12-31',time:'20:00',passes:2,sound:true,voice:true,msg:true};
 let S=Object.assign({},DEF), hadSaved=false;
 try{
-  const raw=localStorage.getItem(KEY),old=localStorage.getItem('santa-sky-v1');
+  const raw=localStorage.getItem(KEY),old=localStorage.getItem('santa-sky-v2')||localStorage.getItem('santa-sky-v1');
   if(raw){S=Object.assign({},DEF,JSON.parse(raw));hadSaved=true;}
-  else if(old){const o=JSON.parse(old);S=Object.assign({},DEF,{names:o.names||'',date:o.date||DEF.date,time:o.time||DEF.time,passes:o.passes||2,sound:o.sound!==false});hadSaved=true;}
+  else if(old){const o=JSON.parse(old);S=Object.assign({},DEF,{names:o.names||'',date:o.date||DEF.date,time:o.time||DEF.time,passes:o.passes||2,sound:o.sound!==false,msg:o.msg!==false});hadSaved=true;}
 }catch(e){}
 const F={names:$('names'),date:$('date'),time:$('time'),sound:$('sound'),voice:$('voice'),msg:$('msg')};
 function fill(){
@@ -250,7 +250,7 @@ function readForm(){
 function names(){return S.names.split(/\s*[,;&+]\s*|\s+και\s+/i).map(s=>s.trim()).filter(Boolean).slice(0,6);}
 function joinNames(a){return a.length<2?(a[0]||''):a.slice(0,-1).join(', ')+' και '+a[a.length-1];}
 function goodList(){const n=names();return n.length===1?n[0]+', είσαι στη λίστα με τα καλά παιδιά!':n.length?joinNames(n)+', είστε στη λίστα με τα καλά παιδιά!':'Είστε στη λίστα με τα καλά παιδιά!';}
-function voiceLine(){const n=names(),nm=joinNames(n);return 'Χο χο χο! Καλή χρονιά'+(nm?', '+nm:'')+'! '+(n.length===1?'Είσαι':'Είστε')+' στη λίστα με τα καλά παιδιά!';}
+
 
 const GAP=10*60000, GRACE=20*60000, TRIP=180*60000, FAR=6100;
 function times(){
@@ -299,6 +299,7 @@ function initAudio(){
     }
     if(AC.state!=='running')AC.resume().catch(()=>{});
     const b=AC.createBuffer(1,1,22050),s=AC.createBufferSource();s.buffer=b;s.connect(AC.destination);s.start(0);
+    loadVoice();
   }catch(e){AC=null;}
 }
 function out(pan){
@@ -349,14 +350,14 @@ function click(){
 }
 
 /* ---------- voice ---------- */
-let VOICE=null;
-function pickVoice(){try{const vs=speechSynthesis.getVoices()||[];VOICE=vs.find(v=>/^el(-|_|$)/i.test(v.lang))||null;}catch(e){VOICE=null;}}
-if('speechSynthesis' in window){pickVoice();try{speechSynthesis.onvoiceschanged=pickVoice;}catch(e){}}
-function unlockSpeech(){try{if('speechSynthesis' in window){const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u);}}catch(e){}}
-function say(text){
-  if(!S.voice||!('speechSynthesis' in window))return;
-  if(!VOICE)pickVoice();if(!VOICE)return;
-  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.voice=VOICE;u.lang=VOICE.lang;u.pitch=.6;u.rate=.86;speechSynthesis.speak(u);}catch(e){}
+let VBUF=null,VLOAD=false;
+function loadVoice(){
+  if(VLOAD||!AC)return;VLOAD=true;
+  fetch('voice.m4a').then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(buf=>{VBUF=buf;}).catch(()=>{VLOAD=false;});
+}
+function playVoice(pan){
+  if(!AC||!S.voice||!VBUF)return;
+  try{const src=AC.createBufferSource(),g=out(pan||0);src.buffer=VBUF;g.gain.value=1;src.connect(g);src.start(AC.currentTime+.02);}catch(e){}
 }
 
 /* ---------- orientation: which way the back camera points ---------- */
@@ -766,14 +767,13 @@ function drawMsg(v,now){
 }
 
 /* ---------- the filmed sleigh: video with its alpha in the lower half ---------- */
-const SV=$('sv'),VFPS=24,VPW=34,VAR=332/1024;
-const BOX=JSON.parse('[0,0,0,[0.018,0.706,0.189,0.904],[0.018,0.699,0.198,0.905],[0.019,0.693,0.206,0.905],[0.019,0.688,0.212,0.905],[0.02,0.675,0.235,0.905],[0.02,0.666,0.242,0.906],[0.021,0.657,0.249,0.906],[0.021,0.649,0.255,0.905],[0.022,0.641,0.262,0.903],[0.023,0.632,0.27,0.902],[0.023,0.622,0.277,0.9],[0.024,0.612,0.284,0.897],[0.025,0.602,0.292,0.894],[0.026,0.591,0.3,0.891],[0.027,0.581,0.308,0.889],[0.028,0.572,0.317,0.889],[0.029,0.565,0.325,0.89],[0.03,0.559,0.334,0.893],[0.032,0.553,0.343,0.897],[0.033,0.548,0.352,0.901],[0.033,0.543,0.361,0.905],[0.034,0.537,0.37,0.908],[0.035,0.529,0.379,0.91],[0.036,0.522,0.388,0.911],[0.037,0.515,0.396,0.913],[0.039,0.508,0.405,0.914],[0.04,0.501,0.415,0.917],[0.041,0.496,0.424,0.92],[0.042,0.491,0.433,0.924],[0.043,0.486,0.442,0.928],[0.044,0.481,0.451,0.932],[0.045,0.475,0.461,0.934],[0.045,0.467,0.47,0.934],[0.046,0.458,0.479,0.933],[0.047,0.448,0.488,0.932],[0.049,0.437,0.498,0.929],[0.05,0.426,0.507,0.927],[0.05,0.416,0.516,0.925],[0.052,0.406,0.525,0.924],[0.053,0.396,0.533,0.923],[0.054,0.386,0.542,0.922],[0.055,0.376,0.551,0.921],[0.056,0.364,0.559,0.918],[0.057,0.352,0.567,0.915],[0.058,0.34,0.575,0.911],[0.059,0.326,0.583,0.906],[0.06,0.314,0.591,0.902],[0.061,0.302,0.599,0.898],[0.062,0.291,0.607,0.895],[0.062,0.282,0.614,0.894],[0.063,0.274,0.622,0.893],[0.064,0.267,0.628,0.894],[0.065,0.26,0.635,0.895],[0.065,0.253,0.642,0.895],[0.066,0.245,0.648,0.895],[0.067,0.237,0.654,0.895],[0.067,0.228,0.659,0.895],[0.068,0.22,0.665,0.896],[0.068,0.213,0.67,0.897],[0.069,0.208,0.675,0.9],[0.069,0.204,0.68,0.903],[0.07,0.202,0.684,0.907],[0.07,0.201,0.688,0.913],[0.071,0.201,0.692,0.918],[0.071,0.201,0.696,0.921],[0.071,0.2,0.699,0.924],[0.072,0.198,0.701,0.925],[0.072,0.196,0.704,0.926],[0.072,0.191,0.706,0.927],[0.072,0.185,0.707,0.928],[0.072,0.18,0.709,0.929],[0.072,0.176,0.71,0.93],[0.072,0.171,0.711,0.932],[0.072,0.166,0.711,0.933],[0.072,0.161,0.712,0.934],[0.073,0.158,0.712,0.933],[0.073,0.154,0.712,0.931],[0.073,0.15,0.713,0.928],[0.073,0.145,0.713,0.925],[0.074,0.142,0.714,0.921],[0.074,0.139,0.715,0.917],[0.075,0.137,0.716,0.914],[0.075,0.139,0.716,0.911],[0.076,0.142,0.717,0.909],[0.076,0.145,0.718,0.907],[0.077,0.148,0.719,0.904],[0.078,0.15,0.72,0.902],[0.078,0.151,0.721,0.899],[0.079,0.151,0.723,0.896],[0.08,0.149,0.724,0.893],[0.08,0.147,0.725,0.891],[0.081,0.145,0.727,0.89],[0.082,0.145,0.729,0.891],[0.083,0.146,0.73,0.893],[0.084,0.148,0.732,0.895],[0.085,0.15,0.734,0.899],[0.086,0.152,0.736,0.902],[0.087,0.153,0.738,0.904],[0.088,0.153,0.74,0.906],[0.089,0.153,0.742,0.907],[0.09,0.152,0.744,0.909],[0.092,0.148,0.746,0.91],[0.093,0.144,0.748,0.913],[0.094,0.141,0.751,0.916],[0.095,0.138,0.753,0.92],[0.097,0.136,0.756,0.924],[0.098,0.133,0.758,0.928],[0.099,0.13,0.76,0.932],[0.1,0.128,0.763,0.933],[0.101,0.126,0.765,0.934],[0.102,0.124,0.767,0.933],[0.104,0.121,0.769,0.932],[0.105,0.119,0.772,0.93],[0.106,0.119,0.774,0.929],[0.107,0.122,0.777,0.927],[0.109,0.125,0.779,0.927],[0.11,0.13,0.781,0.926],[0.111,0.133,0.784,0.925],[0.113,0.136,0.786,0.924],[0.114,0.136,0.788,0.921],[0.115,0.136,0.791,0.917],[0.117,0.131,0.793,0.913],[0.118,0.126,0.795,0.908],[0.119,0.12,0.797,0.903],[0.12,0.116,0.8,0.9],[0.121,0.113,0.802,0.897],[0.123,0.11,0.805,0.896],[0.124,0.108,0.807,0.896],[0.125,0.107,0.809,0.896],[0.126,0.105,0.811,0.896],[0.127,0.103,0.813,0.896],[0.129,0.1,0.816,0.896],[0.13,0.093,0.818,0.895],[0.131,0.086,0.82,0.895],[0.132,0.08,0.822,0.895],[0.133,0.075,0.825,0.896],[0.134,0.071,0.827,0.899],[0.135,0.068,0.829,0.903],[0.136,0.065,0.831,0.908],[0.137,0.067,0.833,0.913],[0.138,0.068,0.834,0.916],[0.139,0.07,0.836,0.919],[0.14,0.071,0.838,0.921],[0.141,0.071,0.839,0.923],[0.141,0.071,0.841,0.923],[0.142,0.077,0.842,0.924],[0.143,0.083,0.843,0.925],[0.143,0.089,0.845,0.927],[0.144,0.095,0.846,0.929],[0.145,0.102,0.847,0.931],[0.145,0.107,0.848,0.932],[0.146,0.111,0.849,0.932],[0.146,0.108,0.85,0.931],[0.147,0.105,0.851,0.929],[0.147,0.102,0.851,0.926],[0.147,0.097,0.852,0.922],[0.148,0.093,0.852,0.918],[0.148,0.089,0.853,0.915],[0.148,0.087,0.853,0.913],[0.148,0.086,0.853,0.91],[0.149,0.084,0.853,0.909],[0.149,0.083,0.853,0.907],[0.15,0.082,0.853,0.904],[0.15,0.08,0.853,0.901],[0.151,0.078,0.853,0.898],[0.152,0.077,0.853,0.894],[0.153,0.075,0.853,0.891],[0.154,0.075,0.853,0.889],[0.155,0.077,0.854,0.888],[0.157,0.08,0.854,0.888],[0.159,0.084,0.854,0.89],[0.161,0.089,0.855,0.892],[0.163,0.094,0.855,0.895],[0.166,0.099,0.855,0.897],[0.169,0.105,0.856,0.899],[0.171,0.111,0.856,0.901],[0.174,0.117,0.857,0.902],[0.177,0.124,0.857,0.904],[0.181,0.132,0.858,0.907],[0.184,0.142,0.858,0.91],[0.188,0.154,0.859,0.914],[0.191,0.167,0.86,0.919],[0.195,0.179,0.861,0.923],[0.2,0.191,0.862,0.928],[0.204,0.202,0.862,0.93],[0.208,0.211,0.863,0.932],[0.213,0.219,0.864,0.932],[0.217,0.225,0.865,0.932],[0.222,0.23,0.866,0.931],[0.227,0.236,0.867,0.929],[0.232,0.241,0.868,0.929],[0.237,0.246,0.869,0.929],[0.243,0.251,0.869,0.928],[0.248,0.256,0.87,0.928],[0.254,0.26,0.871,0.927],[0.26,0.263,0.872,0.924],[0.266,0.265,0.873,0.92],[0.272,0.266,0.874,0.915],[0.278,0.266,0.875,0.91],[0.284,0.267,0.876,0.904],[0.29,0.269,0.877,0.9],[0.297,0.272,0.878,0.897],[0.304,0.275,0.879,0.894],[0.31,0.281,0.88,0.893],[0.317,0.286,0.881,0.893],[0.324,0.292,0.882,0.892],[0.331,0.298,0.883,0.892],[0.338,0.303,0.884,0.891],[0.345,0.309,0.885,0.89],[0.352,0.314,0.887,0.889],[0.359,0.32,0.888,0.889],[0.366,0.327,0.889,0.89],[0.373,0.336,0.89,0.892],[0.381,0.346,0.892,0.896],[0.388,0.357,0.893,0.901],[0.396,0.369,0.895,0.905],[0.403,0.38,0.896,0.91],[0.411,0.39,0.898,0.913],[0.418,0.4,0.899,0.917],[0.426,0.408,0.9,0.918],[0.434,0.417,0.902,0.92],[0.441,0.425,0.903,0.922],[0.449,0.433,0.904,0.924],[0.457,0.443,0.906,0.926],[0.465,0.453,0.907,0.929],[0.473,0.462,0.909,0.932],[0.482,0.472,0.91,0.934],[0.49,0.481,0.911,0.935],[0.498,0.488,0.913,0.934],[0.506,0.494,0.914,0.932],[0.514,0.498,0.915,0.929],[0.522,0.502,0.916,0.925],[0.53,0.506,0.918,0.922],[0.538,0.511,0.919,0.918],[0.546,0.515,0.92,0.916],[0.554,0.521,0.921,0.914],[0.562,0.526,0.923,0.912],[0.571,0.531,0.924,0.911],[0.579,0.536,0.925,0.908],[0.586,0.54,0.927,0.905],[0.595,0.543,0.928,0.902],[0.603,0.546,0.929,0.898],[0.611,0.55,0.931,0.894],[0.619,0.554,0.932,0.891],[0.627,0.56,0.934,0.889],[0.634,0.567,0.935,0.889],[0.643,0.575,0.936,0.89],[0.65,0.584,0.938,0.892],[0.658,0.593,0.939,0.895],[0.666,0.602,0.941,0.897],[0.674,0.611,0.942,0.899],[0.682,0.619,0.944,0.901],[0.689,0.627,0.945,0.902],[0.697,0.636,0.947,0.903],[0.705,0.644,0.948,0.905],[0.712,0.654,0.949,0.908],[0.72,0.664,0.95,0.912],[0.727,0.676,0.952,0.916],[0.734,0.687,0.953,0.92],[0.742,0.697,0.954,0.925],[0.749,0.707,0.955,0.928],[0.756,0.716,0.956,0.929],[0.763,0.723,0.957,0.93],[0.77,0.729,0.958,0.93],[0.777,0.735,0.959,0.929],[0.784,0.741,0.961,0.929],[0.79,0.746,0.961,0.929],[0.797,0.752,0.962,0.929],[0.803,0.759,0.963,0.929],[0.81,0.765,0.965,0.929],[0.816,0.77,0.966,0.928],[0.822,0.774,0.967,0.927],[0.828,0.776,0.968,0.923],[0.834,0.778,0.969,0.92],[0.84,0.779,0.97,0.915],[0.846,0.779,0.971,0.911],[0.852,0.78,0.972,0.907],[0.857,0.781,0.973,0.902],[0.863,0.784,0.974,0.899],[0.868,0.788,0.974,0.897],[0.873,0.791,0.975,0.894],[0.878,0.795,0.976,0.892],[0.883,0.798,0.977,0.889],[0.888,0.801,0.978,0.886],[0.893,0.804,0.979,0.884],[0.897,0.806,0.979,0.882],[0.902,0.809,0.98,0.881],[0.906,0.814,0.98,0.881],[0.91,0.819,0.98,0.882],[0.912,0.821,0.98,0.882],[0.914,0.824,0.98,0.883],[0.916,0.827,0.98,0.884],0,0]');
+const SV=$('sv'),VW=1024,VH=448,VTEAM=900,VDEG=24;
 let GL=null,glc=null,VIDEO_OK=false,lastVT=-1;
 SV.addEventListener('loadeddata',()=>{VIDEO_OK=true;});
 SV.addEventListener('error',()=>{VIDEO_OK=false;});
 function initGL(){
   try{
-    glc=document.createElement('canvas');glc.width=1024;glc.height=332;
+    glc=document.createElement('canvas');glc.width=VW;glc.height=VH;
     const gl=glc.getContext('webgl',{premultipliedAlpha:true,preserveDrawingBuffer:true,alpha:true,antialias:false});if(!gl)return;
     const sh=(t,src)=>{const o=gl.createShader(t);gl.shaderSource(o,src);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error('shader');return o;};
     const pr=gl.createProgram();
@@ -784,7 +784,7 @@ function initGL(){
     const loc=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
     gl.bindTexture(gl.TEXTURE_2D,gl.createTexture());
     [[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]].forEach(q=>gl.texParameteri(gl.TEXTURE_2D,q[0],q[1]));
-    gl.viewport(0,0,1024,332);gl.clearColor(0,0,0,0);GL=gl;
+    gl.viewport(0,0,VW,VH);gl.clearColor(0,0,0,0);GL=gl;
   }catch(e){GL=null;console.warn('webgl',e&&e.message);}
 }
 function glFrame(){
@@ -795,11 +795,10 @@ function glFrame(){
 function vidPlay(t){try{SV.currentTime=t||0;lastVT=-1;const p=SV.play();if(p&&p.catch)p.catch(()=>{});}catch(e){}}
 function vidReady(){return !!GL&&!SV.error&&(VIDEO_OK||SV.readyState>=2);}
 /* where the sleigh is inside the plane, and on screen */
-function vidPlane(v,f){const c=proj(v,f.h0,f.e0),w=f.pw*v.ppd;return {x:c[0],y:c[1],w,h:w*VAR};}
-function vidAt(pl,dir,u,vv){return [pl.x+dir*(u-.5)*pl.w,pl.y+(vv-.5)*pl.h];}
-function vidBox(){const i=Math.min(BOX.length-1,Math.max(0,Math.floor(SV.currentTime*VFPS)));return BOX[i]||null;}
-function drawVid(c,pl,dir){c.save();c.translate(pl.x,pl.y);c.scale(dir,1);c.drawImage(glc,-pl.w/2,-pl.h/2,pl.w,pl.h);c.restore();}
-function newVidFly(v,dir){return {vid:true,dir,pw:VPW,h0:v.h,e0:clamp(v.e,-5,55)+8,t0:performance.now(),pre:1800,started:false};}
+const VIDFLY={deg:VDEG,sc0:.8,sc1:1.15,lift:9,arc:3.5,speed:7.6,secs:13};
+function vidScale(v,pos){return v.ppd*VDEG*pos.sc/VTEAM;}
+function drawVid(c,x,y,s,dir,rot){c.save();c.translate(x,y);c.scale(dir,1);c.rotate(rot);c.drawImage(glc,-VW/2*s,-VH/2*s,VW*s,VH*s);c.restore();}
+function newVidFly(v,dir){const f=newFly(v,dir,VIDFLY);f.vid=true;return f;}
 
 /* ---------- sky view ---------- */
 let mode='setup',camOK=false,stream=null,FLY=null,PENDING=null,TRAIL=[],PHOTOS=[],flights=0,lastHud=0,lastFlightEnd=-1e9,snapReq=false,lastBig=null;
@@ -835,33 +834,23 @@ function drawSky(now,dt){
   drawTrail(TRAIL,v,dt);
   let amp=0,pan=0;
   if(FLY&&FLY.vid){
-    const f=FLY,el=now-f.t0;
-    if(!f.started&&el>=f.pre){f.started=true;vidPlay(0);}
-    if(!f.started){amp=.3*el/f.pre;pan=-.7*f.dir;}
-    else{
-      const pl=vidPlane(v,f),box=vidBox(),dur=SV.duration||BOX.length/VFPS,prog=clamp(SV.currentTime/dur,0,1);
-      if(glFrame())drawVid(c,pl,f.dir);
-      if(box){
-        const ctr=vidAt(pl,f.dir,(box[0]+box[2])/2,(box[1]+box[3])/2),cx=ctr[0],cy=ctr[1],size=(box[2]-box[0])/.7;
-        f.on=cx>-30&&cx<v.W+30&&cy>-10&&cy<v.H+10;
-        f.side=cx<0?'αριστερά':cx>v.W?'δεξιά':cy<0?'πιο ψηλά':'πιο χαμηλά';
-        if(f.on)f.seen=true;
-        const rr=vidAt(pl,f.dir,box[0]+.04*(box[2]-box[0]),box[3]-.1*(box[3]-box[1]));
-        emitTrail(TRAIL,v,rr[0],rr[1],f.dir,Math.max(.7,size*1.2),2);
-        if(!f.said&&f.on&&size>.55&&Math.abs(cx-v.W/2)<v.W*.25){f.said=now;say(voiceLine());}
-        if(!f.snap&&f.on&&size>.82&&Math.abs(cx-v.W/2)<v.W*.18){f.snap=true;snapReq=true;}
-        if(!f.on&&(!f.seen||prog<.7))edgeArrow(c,v,cx,cy,now);
-        const hc=f.h0+f.dir*((box[0]+box[2])/2-.5)*f.pw,d=angDiff(hc,v.h);
-        amp=(.25+.75*clamp(size,0,1))*(.45+.55*Math.exp(-(d*d)/700));pan=clamp(d/30,-1,1);
-        if(!f.msg&&((f.said>0&&now-f.said>900)||prog>.85)){f.msg=true;if(!f.said){f.said=-1;say(voiceLine());}if(S.msg!==false)startMsg(v,clamp(cx,20,v.W-20),clamp(cy,60,v.H-60),pl.y+pl.h/2+6);}
-      }else amp=prog<.5?.3:.08;
-      if(SV.paused&&!SV.ended&&SV.currentTime>0&&(!f.retry||now-f.retry>800)){f.retry=now;try{const rp=SV.play();if(rp&&rp.catch)rp.catch(()=>{});}catch(e){}}
-      if(el>f.pre+2500&&SV.paused&&SV.currentTime===0){FLY=newFly(v,f.dir,SKYFLY);FLY.t0=now-1500;}
-      else if(SV.ended||prog>=.995){
-        if(!f.msg&&S.msg!==false){f.msg=true;startMsg(v,v.W/2,v.H*.35);}
-        try{SV.pause();}catch(e){}FLY=null;flights++;lastFlightEnd=now;
-      }
+    const f=FLY,pos=flyPos(f,now),s=vidScale(v,pos),pt=proj(v,pos.h,pos.e),cx=pt[0],cy=pt[1],tw=VTEAM*s;
+    if(!f.started&&(Math.abs(cx-v.W/2)<v.W/2+tw*.62||pos.p>.6)){
+      f.started=now;vidPlay(0);playVoice(clamp((cx-v.W/2)/(v.W/2),-1,1));f.said=now;
     }
+    if(f.started&&glFrame())drawVid(c,cx,cy,s,f.dir,pos.rot);
+    f.on=cx>-tw*.25&&cx<v.W+tw*.25&&cy>-10&&cy<v.H+10;
+    f.side=cx<0?'αριστερά':cx>v.W?'δεξιά':cy<0?'πιο ψηλά':'πιο χαμηλά';
+    if(f.on)f.seen=true;
+    if(f.started&&pos.p<1){const rr=local2screen(cx,cy,s,f.dir,pos.rot,-442,176);emitTrail(TRAIL,v,rr[0],rr[1],f.dir,Math.max(.7,pos.sc),2);}
+    if(!f.snap&&f.on&&Math.abs(cx-v.W/2)<v.W*.15){f.snap=true;snapReq=true;}
+    if(!f.on&&pos.p<.96&&(!f.seen||pos.p<.7))edgeArrow(c,v,cx,cy,now);
+    const d=angDiff(pos.h,v.h);
+    amp=(.15+.85*Math.exp(-(d*d)/700))*clamp((now-f.t0)/1500,0,1)*(pos.p>.9?(1-pos.p)/.1:1);pan=clamp(d/30,-1,1);
+    if(!f.msg&&((f.said&&now-f.said>3200)||pos.p>.85)){f.msg=true;if(S.msg!==false)startMsg(v,clamp(cx,20,v.W-20),clamp(cy,60,v.H-60),cy+VH/2*s*.85);}
+    if(f.started&&SV.paused&&SV.currentTime>0&&(!f.retry||now-f.retry>800)){f.retry=now;try{const rp=SV.play();if(rp&&rp.catch)rp.catch(()=>{});}catch(e){}}
+    if(f.started&&now-f.started>2500&&SV.paused&&SV.currentTime===0){f.vid=false;f.deg=SKYFLY.deg;f.sc0=SKYFLY.sc0;f.sc1=SKYFLY.sc1;f.real=true;}
+    if(pos.p>=1){try{SV.pause();}catch(e){}FLY=null;flights++;lastFlightEnd=now;}
   }else if(FLY){
     const f=FLY,pos=flyPos(f,now),r=drawTeam(v,pos,f.dir,now),x=r[0],y=r[1],s=r[2];
     const ctr=local2screen(x,y,s,f.dir,pos.rot,74,-26),cx=ctr[0],cy=ctr[1];
@@ -870,8 +859,8 @@ function drawSky(now,dt){
     if(f.on)f.seen=true;
     if(pos.p<1&&Math.abs(cx-v.W/2)<v.W*3){let em=local2screen(x,y,s,f.dir,pos.rot,-82,42);emitTrail(TRAIL,v,em[0],em[1],f.dir,s,2);em=local2screen(x,y,s,f.dir,pos.rot,rnd(-80,30),45);emitTrail(TRAIL,v,em[0],em[1],f.dir,s,1);}
     const hd=local2screen(x,y,s,f.dir,pos.rot,-30,-56);
-    if(!f.said&&hd[0]>v.W*.18&&hd[0]<v.W*.82&&hd[1]>40&&hd[1]<v.H-40){f.said=now;say(voiceLine());}
-    if(!f.msg&&((f.said>0&&now-f.said>900)||pos.p>.85)){f.msg=true;if(!f.said){f.said=-1;say(voiceLine());}if(S.msg!==false)startMsg(v,clamp(cx,20,v.W-20),clamp(cy,60,v.H-60));}
+    if(!f.said&&hd[0]>v.W*.18&&hd[0]<v.W*.82&&hd[1]>40&&hd[1]<v.H-40){f.said=now;playVoice(clamp((hd[0]-v.W/2)/(v.W/2),-1,1));}
+    if(!f.msg&&((f.said>0&&now-f.said>3200)||pos.p>.85)){f.msg=true;if(!f.said){f.said=-1;playVoice(0);}if(S.msg!==false)startMsg(v,clamp(cx,20,v.W-20),clamp(cy,60,v.H-60));}
     if(!f.snap&&f.on&&Math.abs(cx-v.W/2)<v.W*.12){f.snap=true;snapReq=true;}
     if(!f.on&&pos.p<.96&&(!f.seen||pos.p<.7))edgeArrow(c,v,cx,cy,now);
     const d=angDiff(pos.h+f.dir*74*s/v.ppd,v.h);
@@ -1005,14 +994,16 @@ function drawHero(now,dt){
   if(!HV.W)sizeHero();if(!HV.W)return;
   hctx.setTransform(DPR,0,0,DPR,0,0);backdrop(HV,now);
   if(vidReady()){
-    if(RM){if(SV.paused&&Math.abs(SV.currentTime-6.2)>.1){try{SV.currentTime=6.2;}catch(e){}}}
-    else if(SV.paused||SV.ended){if(now>heroVidT){heroVidT=now+1e9;vidPlay(0);}}
-    else heroVidT=now+700;
-    const f={h0:0,e0:14,pw:Math.min(70,HV.W/HV.ppd)},pl=vidPlane(HV,f);
-    drawTrail(HTRAIL,HV,dt);
-    if(glFrame())drawVid(hctx,pl,1);
-    const box=vidBox();
-    if(box&&!SV.paused){const rr=vidAt(pl,1,box[0]+.04*(box[2]-box[0]),box[3]-.1*(box[3]-box[1]));emitTrail(HTRAIL,HV,rr[0],rr[1],1,.9,1);}
+    if(RM){if(SV.paused&&Math.abs(SV.currentTime-2)>.1){try{SV.currentTime=2;}catch(e){}}}
+    else if(SV.paused&&now>heroVidT){heroVidT=now+1e9;vidPlay(0);}
+    else if(!SV.paused)heroVidT=now+700;
+    if(!HFLY&&(RM||now>heroNext))HFLY=newFly(HV,1,{deg:VDEG*1.1,sc0:.85,sc1:1.1,lead:4,lift:3,arc:2.5,secs:11});
+    if(!HFLY)return;
+    const pos=flyPos(HFLY,now,RM?.5:null),s=vidScale(HV,pos)*1.1,pt=proj(HV,pos.h,pos.e);
+    if(!RM)drawTrail(HTRAIL,HV,dt);
+    if(glFrame())drawVid(hctx,pt[0],pt[1],s,1,pos.rot);
+    if(!RM&&pos.p<1){const rr=local2screen(pt[0],pt[1],s,1,pos.rot,-442,176);emitTrail(HTRAIL,HV,rr[0],rr[1],1,.9,1);}
+    if(!RM&&pos.p>=1){HFLY=null;heroNext=now+900;}
     return;
   }
   if(!HFLY&&(RM||now>heroNext))HFLY=newFly(HV,1,{lead:4,lift:3,arc:2.5,secs:11});
@@ -1032,7 +1023,7 @@ function show(m){
 }
 async function enterSky(test){
   readForm();
-  initAudio();unlockSpeech();
+  initAudio();
   try{SV.muted=true;const pv=SV.play();if(pv&&pv.then)pv.then(()=>{if(!FLY||!FLY.vid||!FLY.started)SV.pause();}).catch(()=>{});}catch(e){}
   const pO=startOri(),pC=startCam();
   show('sky');wake();hud(performance.now());
@@ -1041,7 +1032,7 @@ async function enterSky(test){
   if(test)requestPass(2200);
 }
 function exitSky(){
-  stopCam();try{speechSynthesis.cancel();SV.pause();}catch(e){}heroVidT=0;
+  stopCam();try{SV.pause();}catch(e){}heroVidT=0;
   FLY=null;PENDING=null;MSG=null;TRAIL.length=0;
   try{if(WL)WL.release();}catch(e){}WL=null;
   show('setup');$('prefs').open=true;
