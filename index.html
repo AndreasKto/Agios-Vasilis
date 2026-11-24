@@ -353,7 +353,7 @@ function click(){
 let VBUF=null,VLOAD=false;
 function loadVoice(){
   if(VLOAD||!AC)return;VLOAD=true;
-  fetch('voice.m4a').then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(buf=>{VBUF=buf;}).catch(()=>{VLOAD=false;});
+  fetch('voice.mp3').then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(buf=>{VBUF=buf;}).catch(()=>{VLOAD=false;});
 }
 function playVoice(pan){
   if(!AC||!S.voice||!VBUF)return;
