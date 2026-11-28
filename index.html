@@ -252,7 +252,7 @@ function names(){return S.names.split(/\s*[,;&+]\s*|\s+και\s+/i).map(s=>s.tri
 function joinNames(a){return a.length<2?(a[0]||''):a.slice(0,-1).join(', ')+' και '+a[a.length-1];}
 function occ(){
   const d=(S.date||DEF.date).split('-').map(Number),m=d[1],day=d[2],ny=(m===12&&day>=31)||(m===1&&day<=6);
-  return ny?{eve:'της Πρωτοχρονιάς',wish:'Καλή Χρονιά',next:'την επόμενη Πρωτοχρονιά'}:{eve:'των Χριστουγέννων',wish:'Καλά Χριστούγεννα',next:'τα επόμενα Χριστούγεννα'};
+  return ny?{ny:true,eve:'της Πρωτοχρονιάς',wish:'Καλή Πρωτοχρονιά',next:'την επόμενη Πρωτοχρονιά'}:{ny:false,eve:'των Χριστουγέννων',wish:'Καλά Χριστούγεννα',next:'τα επόμενα Χριστούγεννα'};
 }
 function goodList(){const n=names();return n.length===1?n[0]+', είσαι στη λίστα με τα καλά παιδιά!':n.length?joinNames(n)+', είστε στη λίστα με τα καλά παιδιά!':'Είστε στη λίστα με τα καλά παιδιά!';}
 
@@ -356,10 +356,13 @@ function click(){
 }
 
 /* ---------- the film's own sound (his voice, the hooves): it follows the picture ---------- */
-let VBUF=null,VLOAD=false,VSRC=null,VRESTART=0;
+/* two versions of the sound: the closing wish is «Καλά Χριστούγεννα!» or «Καλή Πρωτοχρονιά!», by the date set */
+let VBUF=null,VFOR='',VLOAD='',VBAD={},VSRC=null,VRESTART=0;
+function voiceFile(){const f=occ().ny?'santa-final-ny.mp3':'santa-final.mp3';return VBAD[f]?'santa-final.mp3':f;}
 function loadVoice(){
-  if(VLOAD||!AC)return;VLOAD=true;
-  fetch('santa-final.mp3').then(r=>{if(!r.ok)throw new Error(r.status);return r.arrayBuffer();}).then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(buf=>{VBUF=buf;}).catch(()=>{VLOAD=false;});
+  if(!AC)return;const want=voiceFile();
+  if(VFOR===want||VLOAD===want)return;VLOAD=want;
+  fetch(want).then(r=>{if(!r.ok)throw new Error(r.status);return r.arrayBuffer();}).then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(buf=>{if(VLOAD===want){VBUF=buf;VFOR=want;VLOAD='';}}).catch(()=>{if(VLOAD===want)VLOAD='';VBAD[want]=true;});
 }
 function voiceStop(){
   if(!VSRC||!AC)return;const v=VSRC;VSRC=null;
@@ -860,7 +863,7 @@ let RADAR_R=null,DIM=false;
 function dimRadar(on){if(on!==DIM){DIM=on;$('radar').classList.toggle('dim',on);}}
 function sizeFx(){RADAR_R=null;SKY.W=innerWidth;SKY.H=innerHeight;fx.width=Math.round(SKY.W*DPR);fx.height=Math.round(SKY.H*DPR);SKY.ppd=calcPPD();}
 cam.addEventListener('loadedmetadata',()=>{SKY.ppd=calcPPD();});
-function requestPass(delay){if(!FLY&&!PENDING)PENDING={since:performance.now(),up:0,delay:delay||0};}
+function requestPass(delay){if(!FLY&&!PENDING){PENDING={since:performance.now(),up:0,delay:delay||0};loadVoice();}}
 function schedule(nowP){
   const now=Date.now();
   if(!FLY&&!PENDING){
