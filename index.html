@@ -76,7 +76,8 @@ input::placeholder{color:rgba(246,242,234,.45)}
 #cam,#fx{position:absolute;inset:0;width:100%;height:100%;display:block}
 #cam{object-fit:cover}
 .top{position:absolute;left:0;right:0;top:0;display:flex;align-items:flex-start;gap:10px;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left))}
-.radar{flex:1;max-width:440px;display:flex;align-items:center;gap:12px;padding:10px 14px 10px 10px;border-radius:20px;background:var(--glass);border:1px solid rgba(255,255,255,.14);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 10px 30px -12px rgba(0,0,0,.6);-webkit-touch-callout:none}
+.radar.dim{opacity:.12;-webkit-backdrop-filter:none;backdrop-filter:none}
+.radar{transition:opacity .45s;flex:1;max-width:440px;display:flex;align-items:center;gap:12px;padding:10px 14px 10px 10px;border-radius:20px;background:var(--glass);border:1px solid rgba(255,255,255,.14);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 10px 30px -12px rgba(0,0,0,.6);-webkit-touch-callout:none}
 .scope{position:relative;flex:none;width:58px;height:58px;border-radius:50%;overflow:hidden;border:1.5px solid rgba(242,193,78,.6);background:radial-gradient(circle,transparent 0 27%,rgba(242,193,78,.22) 28% 29.5%,transparent 31% 55%,rgba(242,193,78,.22) 56% 57.5%,transparent 59%),#0a1a3c}
 .sweep{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(242,193,78,.55),rgba(242,193,78,0) 75deg,transparent);animation:spin 2.6s linear infinite}
 .home{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff}
@@ -121,7 +122,7 @@ input::placeholder{color:rgba(246,242,234,.45)}
   <div class="hero"><canvas id="hero" aria-hidden="true"></canvas></div>
   <div class="wrap">
     <h1>Ο Άγιος Βασίλης στον ουρανό σου</h1>
-    <p class="lead">Την παραμονή της Πρωτοχρονιάς, σηκώστε το κινητό στο παράθυρο. Το ραντάρ δείχνει πού βρίσκεται ο Άγιος Βασίλης και, την ώρα που ορίσατε, το έλκηθρό του περνάει μέσα από την κάμερα.</p>
+    <p class="lead" id="lead">Την παραμονή των Χριστουγέννων, σηκώστε το κινητό στο παράθυρο. Το ραντάρ δείχνει πού βρίσκεται ο Άγιος Βασίλης και, την ώρα που ορίσατε, το έλκηθρό του περνάει μέσα από την κάμερα.</p>
     <div class="ticket" id="ticket" aria-live="polite"></div>
     <button class="btn primary" id="go" type="button">Άνοιξε τον ουρανό</button>
 
@@ -131,7 +132,7 @@ input::placeholder{color:rgba(246,242,234,.45)}
         <div class="f">
           <label for="names">Όνομα παιδιού</label>
           <input type="text" id="names" maxlength="60" placeholder="π.χ. Μαρία" enterkeyhint="done">
-          <p class="help">Γράψτε το όπως θα το φωνάξει ο Άγιος Βασίλης, π.χ. «Γιώργο», «Νίκο». Για περισσότερα παιδιά, χωρίστε με κόμμα.</p>
+          <p class="help">Γράψτε το όπως θα το γράψει ο Άγιος Βασίλης με αστερόσκονη, π.χ. «Γιώργο», «Νίκο». Για περισσότερα παιδιά, χωρίστε με κόμμα.</p>
         </div>
         <div class="row f">
           <div class="f" style="margin:0"><label for="date">Ημερομηνία</label><input type="date" id="date"></div>
@@ -146,7 +147,7 @@ input::placeholder{color:rgba(246,242,234,.45)}
         <p class="help" style="margin:-8px 0 16px">Με περισσότερα περάσματα, ξαναπερνάει κάθε 10 λεπτά.</p>
         <label class="tog"><span>Κουδουνάκια και μουσική</span><input type="checkbox" id="sound"></label>
         <label class="tog"><span>Το όνομα γράφεται στον ουρανό με αστερόσκονη</span><input type="checkbox" id="msg"></label>
-        <label class="tog"><span>Ο Άγιος Βασίλης λέει «Χο χο χο! Χρόνια πολλά!»</span><input type="checkbox" id="voice"></label>
+        <label class="tog"><span>Ο Άγιος Βασίλης μιλάει στο παιδί: «Με ανακάλυψες; Χο χο χο!»</span><input type="checkbox" id="voice"></label>
         <button class="btn ghost" id="test" type="button" style="margin-top:14px">Δοκιμαστικό πέρασμα τώρα</button>
       </form>
     </details>
@@ -158,14 +159,14 @@ input::placeholder{color:rgba(246,242,234,.45)}
         <li><b>Ρυθμίσεις:</b> κρατήστε πατημένο το μικρό κουμπί πάνω δεξιά για δύο δευτερόλεπτα.</li>
         <li>Η σελίδα πρέπει να είναι ανοιχτή την ώρα του περάσματος, ή να την ανοίξετε μέσα στα επόμενα 20 λεπτά.</li>
         <li>Σβήστε τα φώτα του δωματίου ή ανοίξτε το παράθυρο, για να μη φαίνονται αντανακλάσεις στο τζάμι. Δυναμώστε την ένταση.</li>
-        <li>Όταν περνάει, το ραντάρ τραβάει μόνο του μια φωτογραφία. Θα τη βρείτε κάτω αριστερά.</li>
+        <li>Όταν περνάει, το ραντάρ τραβάει μόνο του φωτογραφίες. Θα τις βρείτε κάτω αριστερά.</li>
         <li>Το όνομα μένει μόνο σε αυτό το κινητό.</li>
       </ol>
     </section>
   </div>
 </main>
 
-<video id="sv" src="santa.mp4" muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1" style="position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none"></video>
+<video id="sv" muted playsinline preload="auto" aria-hidden="true" tabindex="-1" style="position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none"></video>
 
 <div id="sky" hidden>
   <video id="cam" playsinline muted autoplay></video>
@@ -228,7 +229,7 @@ const RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').ma
 
 /* ---------- settings ---------- */
 const KEY='santa-sky-v3', Y=new Date().getFullYear();
-const DEF={names:'',date:Y+'-12-31',time:'20:00',passes:2,sound:true,voice:true,msg:true};
+const DEF={names:'',date:Y+'-12-24',time:'20:00',passes:2,sound:true,voice:true,msg:true};
 let S=Object.assign({},DEF), hadSaved=false;
 try{
   const raw=localStorage.getItem(KEY),old=localStorage.getItem('santa-sky-v2')||localStorage.getItem('santa-sky-v1');
@@ -249,6 +250,10 @@ function readForm(){
 }
 function names(){return S.names.split(/\s*[,;&+]\s*|\s+και\s+/i).map(s=>s.trim()).filter(Boolean).slice(0,6);}
 function joinNames(a){return a.length<2?(a[0]||''):a.slice(0,-1).join(', ')+' και '+a[a.length-1];}
+function occ(){
+  const d=(S.date||DEF.date).split('-').map(Number),m=d[1],day=d[2],ny=(m===12&&day>=31)||(m===1&&day<=6);
+  return ny?{eve:'της Πρωτοχρονιάς',wish:'Καλή Χρονιά',next:'την επόμενη Πρωτοχρονιά'}:{eve:'των Χριστουγέννων',wish:'Καλά Χριστούγεννα',next:'τα επόμενα Χριστούγεννα'};
+}
 function goodList(){const n=names();return n.length===1?n[0]+', είσαι στη λίστα με τα καλά παιδιά!':n.length?joinNames(n)+', είστε στη λίστα με τα καλά παιδιά!':'Είστε στη λίστα με τα καλά παιδιά!';}
 
 
@@ -282,6 +287,7 @@ function ticket(){
   if(now<T[0])r=rel(T[0]-now)+(T.length>1?' · '+T.length+' περάσματα':'');
   else if(now<T[T.length-1]+GRACE)r='Είναι η ώρα του! Ανοίξτε τον ουρανό.';
   else r='Αυτή η ώρα έχει περάσει. Αλλάξτε την ημερομηνία στις ρυθμίσεις.';
+  const ld=$('lead');if(ld)ld.textContent='Την παραμονή '+occ().eve+', σηκώστε το κινητό στο παράθυρο. Το ραντάρ δείχνει πού βρίσκεται ο Άγιος Βασίλης και, την ώρα που ορίσατε, το έλκηθρό του έρχεται μέσα από την κάμερα και σας μιλάει.';
   $('ticket').innerHTML='<div class="tm">'+hhmm(T[0])+'</div><div class="d">'+esc(dayName(T[0]))+'</div><div class="r">'+esc(r)+(n?' · '+esc(n):'')+'</div>';
 }
 
@@ -349,15 +355,31 @@ function click(){
   n.connect(f);f.connect(e);e.connect(MASTER);n.start(t);n.stop(t+.08);
 }
 
-/* ---------- voice ---------- */
-let VBUF=null,VLOAD=false;
+/* ---------- the film's own sound (his voice, the hooves): it follows the picture ---------- */
+let VBUF=null,VLOAD=false,VSRC=null,VRESTART=0;
 function loadVoice(){
   if(VLOAD||!AC)return;VLOAD=true;
-  fetch('voice.mp3').then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(buf=>{VBUF=buf;}).catch(()=>{VLOAD=false;});
+  fetch('santa-final.mp3').then(r=>{if(!r.ok)throw new Error(r.status);return r.arrayBuffer();}).then(b=>new Promise((ok,no)=>AC.decodeAudioData(b,ok,no))).then(buf=>{VBUF=buf;}).catch(()=>{VLOAD=false;});
 }
-function playVoice(pan){
-  if(!AC||!S.voice||!VBUF)return;
-  try{const src=AC.createBufferSource(),g=out(pan||0);src.buffer=VBUF;g.gain.value=1;src.connect(g);src.start(AC.currentTime+.02);}catch(e){}
+function voiceStop(){
+  if(!VSRC||!AC)return;const v=VSRC;VSRC=null;
+  try{const t=AC.currentTime;v.g.gain.cancelScheduledValues(t);v.g.gain.setTargetAtTime(0,t,.02);v.src.stop(t+.15);}catch(e){}
+}
+/* vt is where the picture is; when sound and picture drift apart, the sound jumps to the picture */
+function voiceFollow(vt,running){
+  if(!AC||!VBUF||!S.voice||!running){voiceStop();return;}
+  if(AC.state!=='running'){voiceStop();try{AC.resume().catch(()=>{});}catch(e){}return;}
+  const lat=Math.min(.3,AC.outputLatency||AC.baseLatency||0),now=performance.now();
+  if(VSRC&&Math.abs(AC.currentTime-VSRC.at-lat-vt)<.2)return;
+  if(now-VRESTART<500)return;
+  voiceStop();VRESTART=now;
+  const when=AC.currentTime+.04,off=vt+.04+lat;
+  if(off>=VBUF.duration-.05)return;
+  try{
+    const src=AC.createBufferSource(),g=out(0);src.buffer=VBUF;src.connect(g);
+    g.gain.setValueAtTime(0,when);g.gain.linearRampToValueAtTime(1,when+.03);
+    src.start(when,off);VSRC={src,g,at:when-off};
+  }catch(e){}
 }
 
 /* ---------- orientation: which way the back camera points ---------- */
@@ -728,7 +750,7 @@ const glowCv=document.createElement('canvas'),gctx=glowCv.getContext('2d');
 let MSG=null;
 function startMsg(v,fx0,fy0,yTop){
   const W=v.W,H=v.H,maxW=W*.86;
-  let fs=Math.min(68,W*.14),lines=names().length?['Καλή Χρονιά,',joinNames(names())+'!']:['Καλή Χρονιά!'];
+  let fs=Math.min(68,W*.14),lines=names().length?[occ().wish+',',joinNames(names())+'!']:[occ().wish+'!'];
   const font=()=>'italic 700 '+fs+'px '+SERIF;
   mctx.font=font();let wmax=Math.max.apply(null,lines.map(l=>mctx.measureText(l).width));
   if(wmax>maxW){
@@ -766,11 +788,33 @@ function drawMsg(v,now){
   c.globalAlpha=1;c.globalCompositeOperation='source-over';
 }
 
-/* ---------- the filmed sleigh: video with its alpha in the lower half ---------- */
-const SV=$('sv'),VW=1024,VH=448,VTEAM=900,VDEG=24;
-let GL=null,glc=null,VIDEO_OK=false,lastVT=-1;
-SV.addEventListener('loadeddata',()=>{VIDEO_OK=true;});
-SV.addEventListener('error',()=>{VIDEO_OK=false;});
+/* ---------- the filmed sleigh: one 39 s take, colour above and alpha below ---------- */
+/* It flies in from far away (0-11.4 s), stays and talks to the child (to 31.9 s), then leaves. */
+const SV=$('sv'),VFILE='santa-final.mp4',VW=1168,VH=576,VLEN=39.4;
+const V_IN=11.4,V_OUT=31.9,V_MSG=34.6,V_TALK=[11.9,34.6],SNAPS=[17,28.4];
+const VT={x0:17,cx:527,cy:333,w:1019};   /* the team at full size, in film pixels */
+const VDEG=52;                            /* ...and how many degrees of sky it covers */
+/* every 2nd frame: the team's box x0,y0,x1,y1 and the height of the back of the sleigh, base 36 */
+const TRACK='3a2y4n3d363b2y4o3e373b2y4p3e383b2y4p3f383a2y4q3g393a2y4r3h393a2y4r3h393a2y4s3h393a2y4t3h3a3a2y4t3g3a3a2y4u3h3a3a2y4v3j3b3a2y4x3i3b3a2y4x3i3a3a2y4y3j3b3a2y4z3j3b3a2y503k3c392y513l3b382y513m3b382y523m3b382y533m3b382y543o3c382y553p3c382y563p3c382y573o3c382y593o3c382y5a3q3e382y5b3r3e382y5c3s3f382y5e3t3f382y5e3s3f382y5g3s3g372y5h3t3f382y5i3u3g372y5j3w3g372y5l3w3g362y5m3v3g362z5o3w3h362y5q3y3h362y5r403h362z5t413i362z5v413i362z5w403j362z5y413k352z5z443l342z61453l342z63463l343065483m343067493n34306a493o34306c4a3q33306e4a3q32306f4a3p32306i4d3q32306k4f3s32306n4h3s32306p4i3t32306s4g3u31306u4g3v31306x4i3w3030704m3x3030744n3y3030774n3z30307a4n402z307d4q412y307g4v422y307j4x422y307n4z432y317r4y442x317u4y452w317y50472w328355482w328858492v328d574b2v328i574c2u328m5b4e2u328r5i4f2t328v5m4h2s32905o4i2s33955o4k2r339b5n4m2q349h5q4o2q349n5x4p2p349u614r2n34a1614t2n34a8614v2m34af664x2l34an6e4z2l35au6l522j36b16o542i36b86q562h36bg6p582g36bp6r5b2f36bz6z5e2e36c9755g2d36cj755i2c37cv765m2b38d57h5p2938df7t5s2838dp805w2639e081602539ec8364233aep8b67213af38m6b203bfj8m6f1z3cfy8s6k1x3cgc966o1w3cgq9l6s1u3dh49n6w1s3ehj9m711q3ehz9t751o3eiha77a1n3fj1a77e1l3fjlab7j1i3gk4ap7o1g3hklb97u1e3hl1bg801c3ilibh861a3jm0bm8c173kmkbw8h153kn6bx8n133lnrc78s113moacp8x0z3moqda920x3mp4df960v3npjdd9b0t3nq0di9f0s3oqhdq9j0q3oqzdo9o0o3prfe09s0n3prqej9w0l3qryewa00k3qs4esa30j3rsbepa60i3ssiena70i3ssqela80i3ssweja90i3ssxeua80i3sstfba80i3ssqf9a80i3ssoewa80i3sspera80i3ssreqa90i3ssveia90i3ssxepaa0i3ssvf4aa0i3sssfaaa0i3rspf0a90i3rsoeva90i3qsqera80i3qsseka70i3qsweja70i3qsxeva70i3qsvfca70i3qsrf7a80i3qspexa90i3qsoetaa0i3qsqeraa0i3qssemaa0i3qsseuaa0i3qssf9aa0i3qsuf9aa0i3psweya90i3osweta80i3ostera80i3osqena80i3nsoeta90i3nsqf5a90i3mssfca90i3msvf2a80i3mswewa80i3msvesa80i3msrera80i3mspewa80i3msof4a80i3msqfca90h3lstf1aa0g3lswetaa0g3ksxepaa0g3ksveuaa0h3ksresaa0i3kspf1a90i3ksofba90i3ksqf8a80i3ksueya70i3ksxeta70i3ksxera70i3ksueoa70i3ksrexa80i3ksof9a90h3ksofaa90g3ksrf0aa0g3ksweuaa0g3ksxeraa0h3ksveqaa0i3ksseta90i3lsof4a80i3msofca70i3msrf2a70i3msvera70i3msxeoa70i3msveua80i3mssesa80i3mspf0a90h3mspf9aa0g3msrfaaa0g3msveyaa0g3msxeraa0g3msweraa0g3mstetaa0g3msperaa0g3msof0aa0g3msqfbaa0g3mstf7a90g3msweya90h3msweta80i3msteta70i3msqepa70i3msoeya70i3mspf9a70i3mssf9a80i3msvewa90h3msxera90g3msveuaa0g3msrepaa0g3mspevaa0g3msof3aa0g3msqfbaa0g3msuezaa0h3msxesa90i3lsyeqa90i3ksveva80i3ksreta70i3ksof1a70i3ksofca70i3ksqf7a70i3lsueya80h3nsxeta90g3psxeraa0g3ssueraa0g3tsrezab0g3usofbab0g3vspf2ab0g3wsreyaa0g3xsveraa0g3yswepa90g3ysueva90g3ysrf7a90h3ysof9a90g3yspeyaa0g3ystetaa0g3yswesa90h3ysweoa90h3ystewa90i3yspfaa80i3yspf8a80h3ysreza90h3ysvetaa0g3xsweqaa0g3xsveoab0g3wsrexab0g3vsof9ab0g3usof9aa0h3tsrexa90h3ssuesa80i3rsweta70i3qsweoa70i3psteta70i3osqf5a80h3osofba90g3nspf0aa0g3nsrevaa0g3msweraa0g3lsyeraa0h3kswepa90i3kstf0a90i3ksqfca80i3kspf8a70i3kspexa70i3kssesa70h3ksweoa80g3ksxela90g3ksveuaa0g3kstfaaa0g3kspf6aa0g3ksoexaa0g3kspesa90g3kssena90h3kswela80i3ksyeta70i3kswfaa70i3kstf7a70i3ksqf0a80h3ksoeua80g3kspepa90g3kssemaa0g3ksveuaa0g3ksxfbaa0g3kswf7aa0g3kstf1aa0g3ksqevaa0g3ksoepaa0g3kspepaa0g3ksrezaa0g3kswfcaa0g3ksyf2a90h3kswexa90h3kstera80h3kspeqa80i3ksoewa80h3lspf8a80h3mssfaa90g3mswexa90g3msyesaa0g3mswesaa0g3msteuaa0g3msqf0a90h3mspf9a80i3msqf7a80i3lsteya70i3kswesa70i3ksxesa80i3ksuesa90h3ksqf1a90g3ksofcaa0g3kspf3aa0h3ksuewaa0h3ksweqa90i3ksvera80i3kssexa80i3kspf6a80i3ksqfba80i3ksuf0a80h3ksxeva90g3ksxera90g3ksteqaa0g3ksqexaa0g3kspf7aa0h3ksrf9a90i3ksveya80i3ksweta80i3ksueua70i3ksreta80i3kspf1a80h3kspfba90h3ksrf7a90g3kswf0aa0g3ksxetaa0g3ksveta90h3kstesa90i3ksqf2a80i3ksofca80i3ksqf5a80i3ksuewa80h3ksxesa90h3ksyeqa90g3ksvepaa0g3ksrezaa0g3kspfaaa0g3ksof7a90h3ksqeza80i3ksueta70i3ksxesa70i3ksxepa70h3ksueya80h3ksrfaa90g3lsof7aa0g3msoexaa0g3msqetaa0g3msueqaa0g3msxela90h3msxeta90i3mstf9a80i3msqf9a70i3msoexa70i3mspesa80i3msrera80h3msveja90h3msxepaa0g3mswf7aa0g3mstfbaa0h3msqf1a90h3msoeva90i3mspera80i3nsseja80i3psveoa80i3psxf2a90i3rswfba90h3sstf3aa0h3tsqeuaa0i3vsoeqa90j3vspema80l3wsseja70n3wswesa70q3wsyf6a60u3vsxf2a50z3usveua4153tstela31c3tsteca11k3ssve49z1u3rsze89w263qt4ei9t2j3pt8eb9o2z3nt9du9j3h3lt9di9e403it9da984m3ftacs92593dtecn8v5y39tkco8o6p36tqcj8f7i33txbz878c31u2bg7x972yu4b07oa32uu7ap7eb02ruaa774by2oue9y6vcv2kuj9q6ldt2huq9d6ceq2eux8t63fn2bv38c5ugj28v87v5lhf24vb7j5bia21ve7552j41xvh6x4tjw1uvm6o4lko1svr6a4dle1pvw5v44m21kw15h3xmo1gw5573pna1dw74x3jnu1ew94p3coc1dwb4j35ot1bwe4c2up919wf422gpp17wf3t23q615wf3l1zql14wf3e1vr113wf381rrg12wf341tru11wf311vs510wf2u1qsf0zwf2n1hsp0xwf2i1et10wwf2e1dtc0wwf291ftl0wwf271ett0wwf251bu00vwf2119u70uwf1x17ud0twf1v14uk0swf1s13us0swf1p15uy0swf1l15v20rwf1j12v60rwf1h10va0rwf1e0zve0qwf1d0yvj0qwf1b0xvn0qwf190xvs0qwf180yvw0qwf170yvz0pwf160xw10owf140vw30owf130tw60owf110tw80owf100swa0owf0x0swc0owf0u0swc0owf0t0swc0owf0t0swc0owf0t0swc0owf0t0swc0owf0t0s';
+const TRK=(()=>{const n=TRACK.length/2,a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=parseInt(TRACK.substr(i*2,2),36);return a;})();
+function track(t){
+  const n=TRK.length/5,f=clamp(t*12,0,n-1),i=Math.floor(f),j=Math.min(n-1,i+1),u=f-i,o=[0,0,0,0,0];
+  for(let c=0;c<5;c++)o[c]=TRK[i*5+c]*(1-u)+TRK[j*5+c]*u;
+  return o;
+}
+let GL=null,glc=null,VIDEO_OK=false,VIDEO_BAD=false,lastVT=-1,VBLOB=null,heroNext=0,heroCut=false;
+SV.addEventListener('loadeddata',()=>{VIDEO_OK=true;VIDEO_BAD=false;});
+SV.addEventListener('error',()=>{VIDEO_OK=false;if((SV.currentSrc||SV.src||'').slice(0,5)==='blob:')SV.src=VFILE;else VIDEO_BAD=true;});
+function loadVideo(){
+  SV.src=VFILE;try{SV.load();}catch(e){}
+  /* keep the whole film in memory, so that the flight never waits for the network */
+  try{fetch(VFILE).then(r=>{if(!r.ok)throw new Error(r.status);return r.blob();}).then(b=>{VBLOB=URL.createObjectURL(b);useBlob();}).catch(()=>{});}catch(e){}
+}
+function useBlob(){
+  if(!VBLOB||SV.src===VBLOB||(FLY&&FLY.vid))return;
+  VIDEO_OK=false;lastVT=-1;SV.src=VBLOB;try{SV.load();}catch(e){}
+  heroNext=0;heroCut=false;
+}
 function initGL(){
   try{
     glc=document.createElement('canvas');glc.width=VW;glc.height=VH;
@@ -793,12 +837,14 @@ function glFrame(){
   try{GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,SV);GL.clear(GL.COLOR_BUFFER_BIT);GL.drawArrays(GL.TRIANGLE_STRIP,0,4);lastVT=SV.currentTime;return true;}catch(e){return false;}
 }
 function vidPlay(t){try{SV.currentTime=t||0;lastVT=-1;const p=SV.play();if(p&&p.catch)p.catch(()=>{});}catch(e){}}
-function vidReady(){return !!GL&&!SV.error&&(VIDEO_OK||SV.readyState>=2);}
-/* where the sleigh is inside the plane, and on screen */
-const VIDFLY={deg:VDEG,sc0:.8,sc1:1.15,lift:9,arc:3.5,speed:7.6,secs:13};
-function vidScale(v,pos){return v.ppd*VDEG*pos.sc/VTEAM;}
-function drawVid(c,x,y,s,dir,rot){c.save();c.translate(x,y);c.scale(dir,1);c.rotate(rot);c.drawImage(glc,-VW/2*s,-VH/2*s,VW*s,VH*s);c.restore();}
-function newVidFly(v,dir){const f=newFly(v,dir,VIDFLY);f.vid=true;return f;}
+function vidReady(){return !!GL&&!VIDEO_BAD&&!SV.error&&(VIDEO_OK||SV.readyState>=2);}
+function vidAlpha(vt){return clamp(vt/.6,0,1)*clamp((38.9-vt)/1.1,0,1);}
+/* The film is pinned to the sky where the child is looking when he arrives.
+   Wide screens see the whole team; a phone held upright sees the sleigh and the first reindeer. */
+function newVidFly(v,dir){
+  const k=VDEG/VT.w,hw=v.W/2/v.ppd,ax=VDEG<=hw*1.88?VT.cx:VT.x0+hw*.94/k;
+  return {vid:true,dir,k,ax,ay:VT.cy,h0:v.h,e0:clamp(v.e,8,62),t0:performance.now(),started:0,lvt:-1,lvtAt:0,snapI:0};
+}
 
 /* ---------- sky view ---------- */
 let mode='setup',camOK=false,stream=null,FLY=null,PENDING=null,TRAIL=[],PHOTOS=[],flights=0,lastHud=0,lastFlightEnd=-1e9,snapReq=false,lastBig=null;
@@ -810,7 +856,9 @@ function calcPPD(){
   if(camOK&&cam.videoWidth&&cam.videoHeight){const sc=Math.max(W/cam.videoWidth,H/cam.videoHeight);return Math.max(cam.videoWidth,cam.videoHeight)*sc/64;}
   return Math.max(W,H)/64;
 }
-function sizeFx(){SKY.W=innerWidth;SKY.H=innerHeight;fx.width=Math.round(SKY.W*DPR);fx.height=Math.round(SKY.H*DPR);SKY.ppd=calcPPD();}
+let RADAR_R=null,DIM=false;
+function dimRadar(on){if(on!==DIM){DIM=on;$('radar').classList.toggle('dim',on);}}
+function sizeFx(){RADAR_R=null;SKY.W=innerWidth;SKY.H=innerHeight;fx.width=Math.round(SKY.W*DPR);fx.height=Math.round(SKY.H*DPR);SKY.ppd=calcPPD();}
 cam.addEventListener('loadedmetadata',()=>{SKY.ppd=calcPPD();});
 function requestPass(delay){if(!FLY&&!PENDING)PENDING={since:performance.now(),up:0,delay:delay||0};}
 function schedule(nowP){
@@ -822,7 +870,8 @@ function schedule(nowP){
   if(PENDING&&!FLY){
     PENDING.up=(!hasOri||SKY.e>-12)?PENDING.up+1:0;
     const w=nowP-PENDING.since;
-    if((PENDING.up>20&&w>PENDING.delay)||w>20000){PENDING=null;const dr=Math.random()<.5?1:-1;FLY=vidReady()?newVidFly(SKY,dr):newFly(SKY,dr,SKYFLY);}
+    const vok=vidReady(),ready=vok||VIDEO_BAD||!GL||w>15000;
+    if((PENDING.up>20&&w>PENDING.delay&&ready)||w>20000){PENDING=null;const dr=Math.random()<.5?1:-1;FLY=vok?newVidFly(SKY,dr):newFly(SKY,dr,SKYFLY);}
   }
 }
 function drawSky(now,dt){
@@ -834,23 +883,31 @@ function drawSky(now,dt){
   drawTrail(TRAIL,v,dt);
   let amp=0,pan=0;
   if(FLY&&FLY.vid){
-    const f=FLY,pos=flyPos(f,now),s=vidScale(v,pos),pt=proj(v,pos.h,pos.e),cx=pt[0],cy=pt[1],tw=VTEAM*s;
-    if(!f.started&&(Math.abs(cx-v.W/2)<v.W/2+tw*.62||pos.p>.6)){
-      f.started=now;vidPlay(0);playVoice(clamp((cx-v.W/2)/(v.W/2),-1,1));f.said=now;
-    }
-    if(f.started&&glFrame())drawVid(c,cx,cy,s,f.dir,pos.rot);
-    f.on=cx>-tw*.25&&cx<v.W+tw*.25&&cy>-10&&cy<v.H+10;
+    const f=FLY;
+    if(!f.started){f.started=now;f.lvtAt=now;vidPlay(0);}
+    const vt=SV.currentTime;
+    if(vt!==f.lvt){f.lvt=vt;f.lvtAt=now;}
+    voiceFollow(vt,!SV.paused&&!SV.ended&&vt>0&&now-f.lvtAt<300);
+    const sc=f.k*v.ppd,A=proj(v,f.h0,f.e0),P=(px,py)=>[A[0]+f.dir*(px-f.ax)*sc,A[1]+(py-f.ay)*sc];
+    if(vt>0&&(glFrame()||lastVT>=0)){c.save();c.globalAlpha=vidAlpha(vt);c.translate(A[0],A[1]);c.scale(f.dir*sc,sc);c.drawImage(glc,-f.ax,-f.ay,VW,VH);c.restore();}
+    const T=track(vt),p0=P(T[0],T[1]),p1=P(T[2],T[3]),L=Math.min(p0[0],p1[0]),R=Math.max(p0[0],p1[0]),Tp=p0[1],Bt=p1[1];
+    const cx=(L+R)/2,cy=(Tp+Bt)/2,tw=R-L,th=Bt-Tp;
+    const ix=Math.max(0,Math.min(R,v.W)-Math.max(L,0)),iy=Math.max(0,Math.min(Bt,v.H)-Math.max(Tp,0));
+    f.on=vt>0&&ix*iy>.3*Math.min(tw*th,v.W*v.H*.4);
     f.side=cx<0?'αριστερά':cx>v.W?'δεξιά':cy<0?'πιο ψηλά':'πιο χαμηλά';
     if(f.on)f.seen=true;
-    if(f.started&&pos.p<1){const rr=local2screen(cx,cy,s,f.dir,pos.rot,-442,176);emitTrail(TRAIL,v,rr[0],rr[1],f.dir,Math.max(.7,pos.sc),2);}
-    if(!f.snap&&f.on&&Math.abs(cx-v.W/2)<v.W*.15){f.snap=true;snapReq=true;}
-    if(!f.on&&pos.p<.96&&(!f.seen||pos.p<.7))edgeArrow(c,v,cx,cy,now);
-    const d=angDiff(pos.h,v.h);
-    amp=(.15+.85*Math.exp(-(d*d)/700))*clamp((now-f.t0)/1500,0,1)*(pos.p>.9?(1-pos.p)/.1:1);pan=clamp(d/30,-1,1);
-    if(!f.msg&&((f.said&&now-f.said>3200)||pos.p>.85)){f.msg=true;if(S.msg!==false)startMsg(v,clamp(cx,20,v.W-20),clamp(cy,60,v.H-60),cy+VH/2*s*.85);}
-    if(f.started&&SV.paused&&SV.currentTime>0&&(!f.retry||now-f.retry>800)){f.retry=now;try{const rp=SV.play();if(rp&&rp.catch)rp.catch(()=>{});}catch(e){}}
-    if(f.started&&now-f.started>2500&&SV.paused&&SV.currentTime===0){f.vid=false;f.deg=SKYFLY.deg;f.sc0=SKYFLY.sc0;f.sc1=SKYFLY.sc1;f.real=true;}
-    if(pos.p>=1){try{SV.pause();}catch(e){}FLY=null;flights++;lastFlightEnd=now;}
+    const rear=P(T[0]+.02*(T[2]-T[0]),T[4]);
+    if(vt>.2&&vt<38.9)emitTrail(TRAIL,v,rear[0],rear[1],f.dir,clamp(tw/520,.35,1.3),vt>V_IN&&vt<V_OUT?1:2);
+    if(f.snapI<SNAPS.length&&vt>=SNAPS[f.snapI]){if(f.on)snapReq=true;f.snapI++;}
+    if(!f.on&&vt<V_MSG)edgeArrow(c,v,cx,cy,now);
+    if(!RADAR_R){const r=$('radar').getBoundingClientRect();RADAR_R={l:r.left-6,r:r.right+6,t:r.top-6,b:r.bottom+6};}
+    dimRadar(vt>0&&vt<38.9&&L<RADAR_R.r&&R>RADAR_R.l&&Tp<RADAR_R.b&&Bt>RADAR_R.t);
+    const d=angDiff(unproj(v,cx,cy)[0],v.h),talk=vt>V_TALK[0]&&vt<V_TALK[1];
+    amp=clamp(tw/(v.W*.5),.08,1)*(.25+.75*Math.exp(-(d*d)/700))*vidAlpha(vt)*(talk?(S.voice?0:.5):1)*(S.voice?.55:1);pan=clamp(d/30,-1,1);
+    if(!f.msg&&vt>=V_MSG){f.msg=true;if(S.msg!==false)startMsg(v,clamp(rear[0],20,v.W-20),clamp(rear[1],60,v.H-60));}
+    if(SV.paused&&!SV.ended&&vt>0&&(!f.retry||now-f.retry>800)){f.retry=now;try{const rp=SV.play();if(rp&&rp.catch)rp.catch(()=>{});}catch(e){}}
+    if(now-f.started>3500&&vt===0){try{SV.pause();}catch(e){}voiceStop();dimRadar(false);FLY=newFly(v,f.dir,SKYFLY);}
+    else if(SV.ended||vt>=VLEN-.1||now-f.started>(VLEN+25)*1000){try{SV.pause();}catch(e){}voiceStop();dimRadar(false);FLY=null;flights++;lastFlightEnd=now;useBlob();}
   }else if(FLY){
     const f=FLY,pos=flyPos(f,now),r=drawTeam(v,pos,f.dir,now),x=r[0],y=r[1],s=r[2];
     const ctr=local2screen(x,y,s,f.dir,pos.rot,74,-26),cx=ctr[0],cy=ctr[1];
@@ -859,8 +916,8 @@ function drawSky(now,dt){
     if(f.on)f.seen=true;
     if(pos.p<1&&Math.abs(cx-v.W/2)<v.W*3){let em=local2screen(x,y,s,f.dir,pos.rot,-82,42);emitTrail(TRAIL,v,em[0],em[1],f.dir,s,2);em=local2screen(x,y,s,f.dir,pos.rot,rnd(-80,30),45);emitTrail(TRAIL,v,em[0],em[1],f.dir,s,1);}
     const hd=local2screen(x,y,s,f.dir,pos.rot,-30,-56);
-    if(!f.said&&hd[0]>v.W*.18&&hd[0]<v.W*.82&&hd[1]>40&&hd[1]<v.H-40){f.said=now;playVoice(clamp((hd[0]-v.W/2)/(v.W/2),-1,1));}
-    if(!f.msg&&((f.said>0&&now-f.said>3200)||pos.p>.85)){f.msg=true;if(!f.said){f.said=-1;playVoice(0);}if(S.msg!==false)startMsg(v,clamp(cx,20,v.W-20),clamp(cy,60,v.H-60));}
+    if(!f.said&&hd[0]>v.W*.18&&hd[0]<v.W*.82&&hd[1]>40&&hd[1]<v.H-40)f.said=now;
+    if(!f.msg&&((f.said>0&&now-f.said>3200)||pos.p>.85)){f.msg=true;if(S.msg!==false)startMsg(v,clamp(cx,20,v.W-20),clamp(cy,60,v.H-60));}
     if(!f.snap&&f.on&&Math.abs(cx-v.W/2)<v.W*.12){f.snap=true;snapReq=true;}
     if(!f.on&&pos.p<.96&&(!f.seen||pos.p<.7))edgeArrow(c,v,cx,cy,now);
     const d=angDiff(pos.h+f.dir*74*s/v.ppd,v.h);
@@ -880,9 +937,9 @@ function hud(nowP){
   const ni=T.findIndex(t=>!doneT.has(t)&&now<t+GRACE),next=ni>=0?T[ni]:null;
   if(FLY){
     frac=0;
-    if(FLY.on){s1='Να τος! Τον βλέπεις;';s2='Πετάει πάνω από το σπίτι σου';}
+    if(FLY.on){if(FLY.vid&&SV.currentTime>V_TALK[0]&&SV.currentTime<V_OUT){s1='Σε βλέπει!';s2='Άκου τι σου λέει';}else{s1='Να τος! Τον βλέπεις;';s2='Πετάει πάνω από το σπίτι σου';}}
     else if(!FLY.seen){s1='Άκου τα κουδουνάκια!';s2='Κοίτα '+(FLY.side||'ψηλά')+'!';hint=hasOri&&SKY.e<-12;}
-    else{s1='Πάει να μοιράσει δώρα';s2='Καλή Χρονιά!';}
+    else{s1='Πάει να μοιράσει δώρα';s2=occ().wish+'!';}
   }else if(PENDING){frac=0;s1='Είναι εδώ!';s2='Κοίτα ψηλά στον ουρανό';hint=hasOri&&SKY.e<-12;}
   else if(nowP-lastFlightEnd<15000){frac=.1;s1='Σε είδε!';s2=goodList();}
   else if(next!=null){
@@ -894,7 +951,7 @@ function hud(nowP){
     if(rem>0&&rem<=10400)big=Math.ceil(rem/1000);
     if(rem>0&&rem<60000&&hasOri&&SKY.e<-25)hint=true;
   }else if(flights>0||T.some(t=>doneT.has(t))){s1='Πέρασε από το σπίτι σου!';s2=goodList();frac=.6;}
-  else{s1='Ο Άγιος Βασίλης ήρθε φέτος';s2='Τα λέμε την επόμενη Πρωτοχρονιά!';}
+  else{s1='Ο Άγιος Βασίλης ήρθε φέτος';s2='Τα λέμε '+occ().next+'!';}
   setT($('st1'),s1);setT($('st2'),s2);
   const rr=4+21*clamp(frac,0,1),a=-Math.PI/2+.25*Math.sin(nowP/1500);
   $('blip').style.transform='translate('+(Math.cos(a)*rr).toFixed(1)+'px,'+(Math.sin(a)*rr).toFixed(1)+'px)';
@@ -987,25 +1044,27 @@ $('pClose').addEventListener('click',()=>{$('parent').hidden=true;});
 
 /* ---------- hero picture ---------- */
 const heroCv=$('hero'),hctx=heroCv.getContext('2d'),HV={c:hctx,W:0,H:0,ppd:10,h:0,e:10};
-let HFLY=null,HTRAIL=[],heroNext=0;
+let HFLY=null,HTRAIL=[];
 function sizeHero(){const r=heroCv.getBoundingClientRect();if(!r.width)return;HV.W=r.width;HV.H=r.height;heroCv.width=Math.round(r.width*DPR);heroCv.height=Math.round(r.height*DPR);HV.ppd=r.height/40;HFLY=null;}
-let heroVidT=0;
 function drawHero(now,dt){
   if(!HV.W)sizeHero();if(!HV.W)return;
   hctx.setTransform(DPR,0,0,DPR,0,0);backdrop(HV,now);
   if(vidReady()){
-    if(RM){if(SV.paused&&Math.abs(SV.currentTime-2)>.1){try{SV.currentTime=2;}catch(e){}}}
-    else if(SV.paused&&now>heroVidT){heroVidT=now+1e9;vidPlay(0);}
-    else if(!SV.paused)heroVidT=now+700;
-    if(!HFLY&&(RM||now>heroNext))HFLY=newFly(HV,1,{deg:VDEG*1.1,sc0:.85,sc1:1.1,lead:4,lift:3,arc:2.5,secs:11});
-    if(!HFLY)return;
-    const pos=flyPos(HFLY,now,RM?.5:null),s=vidScale(HV,pos)*1.1,pt=proj(HV,pos.h,pos.e);
+    /* the approach, then straight on to the departure: what he says stays a surprise */
+    const vt=SV.currentTime;
+    if(RM){if(SV.paused&&Math.abs(vt-V_IN)>.1){try{SV.currentTime=V_IN;}catch(e){}}}
+    else if(SV.paused||SV.ended){if(now>heroNext){heroCut=false;heroNext=now+1e9;vidPlay(0);}}
+    else{
+      if(!heroCut&&vt>=V_IN){heroCut=true;try{SV.currentTime=V_OUT+.02;}catch(e){}}
+      if(vt>=VLEN-.15){try{SV.pause();}catch(e){}heroNext=now+1400;}
+    }
+    const s=Math.min(HV.W*.98/VW,HV.H*.62/VH),ox=(HV.W-VW*s)/2,oy=HV.H*.42-VH*s/2;
     if(!RM)drawTrail(HTRAIL,HV,dt);
-    if(glFrame())drawVid(hctx,pt[0],pt[1],s,1,pos.rot);
-    if(!RM&&pos.p<1){const rr=local2screen(pt[0],pt[1],s,1,pos.rot,-442,176);emitTrail(HTRAIL,HV,rr[0],rr[1],1,.9,1);}
-    if(!RM&&pos.p>=1){HFLY=null;heroNext=now+900;}
+    if(glFrame()||lastVT>=0){hctx.save();hctx.globalAlpha=RM?1:vidAlpha(SV.currentTime);hctx.drawImage(glc,ox,oy,VW*s,VH*s);hctx.restore();}
+    if(!RM&&!SV.paused&&vt>.2&&vt<38.9){const T=track(vt);emitTrail(HTRAIL,HV,ox+(T[0]+.02*(T[2]-T[0]))*s,oy+T[4]*s,1,clamp((T[2]-T[0])*s/420,.3,.9),1);}
     return;
   }
+  if(GL&&!VIDEO_BAD)return;   /* the film is still loading: just the night sky */
   if(!HFLY&&(RM||now>heroNext))HFLY=newFly(HV,1,{lead:4,lift:3,arc:2.5,secs:11});
   if(!HFLY)return;
   if(RM){drawTeam(HV,flyPos(HFLY,now,.56),1,now);return;}
@@ -1032,14 +1091,14 @@ async function enterSky(test){
   if(test)requestPass(2200);
 }
 function exitSky(){
-  stopCam();try{SV.pause();}catch(e){}heroVidT=0;
+  stopCam();try{SV.pause();}catch(e){}voiceStop();dimRadar(false);heroNext=0;heroCut=false;
   FLY=null;PENDING=null;MSG=null;TRAIL.length=0;
   try{if(WL)WL.release();}catch(e){}WL=null;
   show('setup');$('prefs').open=true;
 }
 
 /* ---------- start ---------- */
-initGL();
+initGL();loadVideo();
 fill();ticket();if(!hadSaved)$('prefs').open=true;
 $('form').addEventListener('input',readForm);$('form').addEventListener('change',readForm);$('form').addEventListener('submit',e=>e.preventDefault());
 $('go').addEventListener('click',()=>enterSky(false));
